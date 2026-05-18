@@ -12,7 +12,7 @@ CREATE TABLE institution(
   institution_name VARCHAR(255) NOT NULL,
   institution_short_form VARCHAR(10) NOT NULL,
   institution_slug VARCHAR(200) NOT NULL UNIQUE,
-  institution_logo_url VARCHAR(1024) NOT NULL,
+  institution_logo_url VARCHAR(1024),
   institution_email VARCHAR(255) UNIQUE NOT NULL,
   institution_founding_year SMALLINT UNSIGNED NOT NULL,
   institution_eiin_number VARCHAR(20) UNIQUE NOT NULL,
@@ -37,5 +37,31 @@ CREATE TABLE institution(
   
   -- Indexes
   INDEX idx_institute_name (institution_name)
+);
+
+-- "user" and "institute_member" tables creation. "institution_member" is junction table for "institute" and "user" table's many to many relationship.
+
+CREATE TABLE user(
+  user_id VARCHAR(36) PRIMARY KEY,
+  full_name VARCHAR(255) NOT NULL,
+  user_email VARCHAR(255) UNIQUE NOT NULL,
+  user_phone VARCHAR(20) UNIQUE NOT NULL, 
+  user_password_hashed VARCHAR(255) NOT NULL,
+  gender ENUM('male', 'female', 'others') NOT NULL, 
+  avatar_url VARCHAR(1024),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL
+);
+
+CREATE TABLE institute_member(
+  institution_member_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36),
+  user_id VARCHAR(36),
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL
 );
 
