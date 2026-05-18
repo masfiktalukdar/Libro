@@ -63,7 +63,9 @@ CREATE TABLE institute_member(
   deleted_at DATETIME DEFAULT NULL,
 
   FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+
+  CONSTRAINT uq_institution_user UNIQUE (institution_id, user_id)
 );
 
 -- created "departments" table for institute departments
@@ -75,7 +77,9 @@ CREATE TABLE departments(
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+
+  CONSTRAINT uq_institution_department UNIQUE (institution_id, department_name)
 );
 
 -- created "shifts" table for institute shift
@@ -89,5 +93,33 @@ CREATE TABLE shifts(
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+
+  CONSTRAINT uq_institution_shift UNIQUE (institution_id, shift_name)
+);
+
+-- created "document_sample" table for showing the registration document to the students
+
+CREATE TABLE document_sample(
+  document_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  document_url VARCHAR(1024) NOT NULL,
+  document_type ENUM('pdf', 'image') NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
   FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE
+);
+
+-- created "automatic_registration_keyword" table for defining keywords for automaic student registrations
+
+CREATE TABLE automatic_registration_keyword(
+  keyword_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  keyword_value VARCHAR(100) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_institution_keyword (institution_id, keyword_value)
 );
