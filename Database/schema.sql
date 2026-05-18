@@ -123,3 +123,29 @@ CREATE TABLE automatic_registration_keyword(
 
   UNIQUE KEY uq_institution_keyword (institution_id, keyword_value)
 );
+
+-- created "sudent_profile" table for storing student spasific data
+
+CREATE TABLE student_profile(
+  student_id VARCHAR(36) PRIMARY KEY,
+  institution_member_id VARCHAR(36) NOT NULL,
+  department_id VARCHAR(36) NOT NULL,
+  shift_id VARCHAR(36) NOT NULL,
+  student_roll_no VARCHAR(50) NOT NULL,
+  student_registration_no VARCHAR(50) NOT NULL,
+  account_status ENUM('active', 'flagged', 'banned') NOT NULL DEFAULT 'active',
+  reputation_score DECIMAL(4,2) NOT NULL DEFAULT 5.00,
+  has_library_clarence BOOLEAN NOT NULL DEFAULT TRUE,
+  total_fine_amount DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_member_id) REFERENCES institute_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE CASCADE,
+  FOREIGN KEY (shift_id) REFERENCES shifts(shift_id) ON DELETE CASCADE,
+
+  CONSTRAINT chk_reputation_bounds CHECK (reputation_score BETWEEN 0.00 AND 10.00),
+  CONSTRAINT chk_total_fine_positive CHECK (total_fine_amount >= 0.00),
+
+  UNIQUE KEY uq_dept_shift_roll (department_id, shift_id, student_roll_no)
+);
