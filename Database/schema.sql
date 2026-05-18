@@ -39,7 +39,7 @@ CREATE TABLE institution(
   INDEX idx_institute_name (institution_name)
 );
 
--- "user" and "institute_member" tables creation. "institution_member" is junction table for "institute" and "user" table's many to many relationship.
+-- "user" and "institute_member" tables creation. "institution_member" is junction table for "institution" and "user" table's many to many relationship.
 
 CREATE TABLE user(
   user_id VARCHAR(36) PRIMARY KEY,
@@ -58,10 +58,36 @@ CREATE TABLE institute_member(
   institution_member_id VARCHAR(36) PRIMARY KEY,
   institution_id VARCHAR(36),
   user_id VARCHAR(36),
-  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  deleted_at DATETIME DEFAULT NULL
+  deleted_at DATETIME DEFAULT NULL,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
 );
 
+-- created "departments" table for institute departments
+
+CREATE TABLE departments(
+  department_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  department_name VARCHAR(255) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE
+);
+
+-- created "shifts" table for institute shift
+
+CREATE TABLE shifts(
+  shift_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  shift_name VARCHAR(100) NOT NULL,
+  shift_start_time TIME NOT NULL,
+  shift_end_time TIME NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE
+);
