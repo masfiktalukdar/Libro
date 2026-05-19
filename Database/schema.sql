@@ -139,6 +139,7 @@ CREATE TABLE student_profile(
   total_fine_amount DECIMAL(7,2) NOT NULL DEFAULT 0.00,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL,
 
   FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
   FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE CASCADE,
@@ -150,3 +151,20 @@ CREATE TABLE student_profile(
   UNIQUE KEY uq_dept_shift_roll (department_id, shift_id, student_roll_no)
 );
 
+-- created "stuff_profile" table for storing stuff spasific data
+
+CREATE TABLE staff_profile(
+  staff_id VARCHAR(36) PRIMARY KEY,
+  institution_member_id VARCHAR(36) NOT NULL,
+  staff_employee_id VARCHAR(20),
+  about_staff VARCHAR(250),
+  chamber_location VARCHAR(100) NOT NULL,
+  joining_date DATE NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL,
+
+  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_institution_member_staff (institution_member_id)
+);
