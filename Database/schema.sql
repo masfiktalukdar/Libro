@@ -168,3 +168,40 @@ CREATE TABLE staff_profile(
 
   UNIQUE KEY uq_institution_member_staff (institution_member_id)
 );
+
+-- created "roll" & "permission" features to tackle user permission and roles
+
+CREATE TABLE saas_role(
+  role_id VARCHAR(36) PRIMARY KEY,
+  role_value VARCHAR(20) UNIQUE NOT NULL
+);
+
+CREATE TABLE saas_permission(
+  permission_id VARCHAR(36) PRIMARY KEY,
+  permission_key VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE institution_member_role(
+  institution_member_role_id VARCHAR(36) PRIMARY KEY,
+  institution_member_id VARCHAR(36) NOT NULL,
+  role_id VARCHAR(36) NOT NULL,
+  is_primary BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (role_id) REFERENCES saas_role(role_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_primary_secondary_role (institution_member_id, role_id)
+);
+
+CREATE TABLE role_permission(
+  institution_member_role_id VARCHAR(36) NOT NULL,
+  permission_id VARCHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY(institution_member_role_id, permission_id),
+  FOREIGN KEY (institution_member_role_id) REFERENCES institution_member_role(institution_member_role_id) ON DELETE CASCADE,
+  FOREIGN KEY (permission_id) REFERENCES saas_permission(permission_id) ON DELETE CASCADE
+);
