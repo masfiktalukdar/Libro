@@ -54,10 +54,10 @@ CREATE TABLE user(
   deleted_at DATETIME DEFAULT NULL
 );
 
-CREATE TABLE institute_member(
+CREATE TABLE institution_member(
   institution_member_id VARCHAR(36) PRIMARY KEY,
-  institution_id VARCHAR(36),
-  user_id VARCHAR(36),
+  institution_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   deleted_at DATETIME DEFAULT NULL,
@@ -140,7 +140,7 @@ CREATE TABLE student_profile(
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-  FOREIGN KEY (institution_member_id) REFERENCES institute_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
   FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE CASCADE,
   FOREIGN KEY (shift_id) REFERENCES shifts(shift_id) ON DELETE CASCADE,
 
@@ -149,3 +149,4 @@ CREATE TABLE student_profile(
 
   UNIQUE KEY uq_dept_shift_roll (department_id, shift_id, student_roll_no)
 );
+
