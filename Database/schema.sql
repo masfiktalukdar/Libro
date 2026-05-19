@@ -205,3 +205,17 @@ CREATE TABLE role_permission(
   FOREIGN KEY (institution_member_role_id) REFERENCES institution_member_role(institution_member_role_id) ON DELETE CASCADE,
   FOREIGN KEY (permission_id) REFERENCES saas_permission(permission_id) ON DELETE CASCADE
 );
+
+-- created "feedback" table for making a system for giving Libro feedback
+
+CREATE TABLE saas_feedback(
+  feedback_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  institution_member_id VARCHAR(36) NOT NULL,
+  feedback_title VARCHAR(255) NOT NULL,
+  feedback_description VARCHAR(1024) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE
+);
