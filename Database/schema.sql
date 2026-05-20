@@ -354,3 +354,70 @@ CREATE TABLE book_category(
   FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
 );
 
+
+-- created "reservation_request" & "book_borrow" table to streamline reservation and borrow process
+
+CREATE TABLE reservation_request(
+  reservation_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  book_id VARCHAR(36) NOT NULL,
+  book_borrowed_by VARCHAR(36) NOT NULL,
+  reservation_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  reservation_rejection_reason VARCHAR(255) NULL,
+  borrowed_duration_in_days TINYINT UNSIGNED NOT NULL,
+  reservation_req_expiey DATETIME NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+  FOREIGN KEY (book_borrowed_by) REFERENCES institution_member(institution_member_id)
+);
+
+CREATE TABLE book_borrow(
+  borrow_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  book_copy_id VARCHAR(36) NOT NULL,
+  reservation_id VARCHAR(36) NOT NULL,
+  borrowed_by_member_id VARCHAR(36) NOT NULL,
+  issued_by_member_id VARCHAR(36) NOT NULL,
+  received_by_member_id VARCHAR(36) NULL,
+  issued_at DATETIME NOT NULL,
+  due_at DATETIME NOT NULL,
+  returned_at DATETIME NULL,
+  book_status_after_return ENUM('good', 'damaged', 'lost') NULL DEFAULT 'good',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (book_copy_id) REFERENCES book_copies(book_copy_id) ON DELETE CASCADE,
+  FOREIGN KEY (reservation_id) REFERENCES reservation_request(reservation_id) ON DELETE CASCADE,
+  FOREIGN KEY (borrowed_by_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (issued_by_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (received_by_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_institution_reservation (institution_id, reservation_id)
+);
+
+
+-- created "book_fine" table to store all the fine realated information
+
+CREATE TABLE book_fine(
+  fine_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  institution_member_id VARCHAR(36) NOT NULL,
+  book_copy_id VARCHAR(36) NOT NULL,
+  book_borrow_id VARCHAR(36) NOT NULL,
+  fine_reason VARCHAR(255) NOT NULL,
+  fine_amount DECIMAL(7,2) NOT NULL,
+  fine_status ENUM('paid', 'unpaid') NOT NULL DEFAULT 'unpaid',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (book_copy_id) REFERENCES book_copies(book_copy_id) ON DELETE CASCADE,
+  FOREIGN KEY (book_borrow_id) REFERENCES book_borrow(borrow_id) ON DELETE CASCADE,
+  
+  CONSTRAINT chk_fine_amount CHECK (fine_amount > 0.00)
+);
