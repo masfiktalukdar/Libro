@@ -311,6 +311,22 @@ CREATE TABLE book_author(
   FOREIGN KEY (author_id) REFERENCES author(author_id) ON DELETE CASCADE
 );
 
+CREATE TABLE student_author_follow(
+  student_author_follow_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  followed_by_id VARCHAR(36) NOT NULL,
+  author_id VARCHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (followed_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (author_id) REFERENCES author(author_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_follower_author (followed_by_id, author_id),
+
+  INDEX idx_institution_author_follow (institution_id, author_id)
+);
+
 -- created "category" & "book_category" table to hardening the relation between category and book table
 
 CREATE TABLE category(
@@ -337,3 +353,4 @@ CREATE TABLE book_category(
   FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
 );
+
