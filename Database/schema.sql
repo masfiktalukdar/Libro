@@ -219,3 +219,44 @@ CREATE TABLE saas_feedback(
   FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
   FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE
 );
+
+-- created "book" & "book_copies" table for storing the books and book copies
+
+CREATE TABLE book(
+  book_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  created_by_id VARCHAR(36) NOT NULL,
+  book_name VARCHAR(500) NOT NULL,
+  book_cover_url VARCHAR(1024) NOT NULL,
+  book_description VARCHAR(1024),
+  book_published_year SMALLINT UNSIGNED NOT NULL,
+  book_isbn_number VARCHAR(20),
+  book_ranking_score DECIMAL(5,2) NOT NULL DEFAULT 50.00,
+  book_access_type ENUM('public', 'restricted', 'not_allowed') NOT NULL DEFAULT 'public',
+  max_borrow_time_in_days TINYINT UNSIGNED NOT NULL,
+  overdue_fine_amount_per_day DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  INDEX idx_book_name (book_name),
+
+  CONSTRAINT chk_book_ranking_score_max CHECK (book_ranking_score <= 100.00),
+  CONSTRAINT chk_overdue_fine_amount_per_day CHECK (overdue_fine_amount_per_day >= 0.00)
+);
+
+CREATE TABLE book_copies(
+  book_copy_id VARCHAR(36) PRIMARY KEY,
+  book_id VARCHAR(36) NOT NULL,
+  created_by_id VARCHAR(36) NOT NULL,
+  book_copy_status ENUM('available', 'reserved', 'borrowed', 'damaged', 'lost') NOT NULL DEFAULT 'available',
+  qr_code_slug VARCHAR(500) UNIQUE NOT NULL,
+  shelf_location VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE
+);
