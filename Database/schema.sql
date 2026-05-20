@@ -260,3 +260,34 @@ CREATE TABLE book_copies(
   FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
   FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE
 );
+
+-- created "author" & "book_author" tables for maintaining relation between book and author
+
+CREATE TABLE author(
+  author_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  created_by_id VARCHAR(36) NOT NULL,
+  author_name VARCHAR(100) NOT NULL,
+  author_image_url VARCHAR(1024),
+  author_gender ENUM('male', 'female', 'others') NOT NULL,
+  author_follower_count INT UNSIGNED NOT NULL DEFAULT 0,
+  author_country_name VARCHAR(100),
+  author_dob DATE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  INDEX idx_author_name (institution_id, author_name)
+);
+
+CREATE TABLE book_author(
+  book_id VARCHAR(36) NOT NULL,
+  author_id VARCHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY(book_id, author_id),
+  FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+  FOREIGN KEY (author_id) REFERENCES author(author_id) ON DELETE CASCADE
+);
