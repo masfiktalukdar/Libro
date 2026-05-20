@@ -249,16 +249,35 @@ CREATE TABLE book(
 
 CREATE TABLE book_copies(
   book_copy_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
   book_id VARCHAR(36) NOT NULL,
   created_by_id VARCHAR(36) NOT NULL,
   book_copy_status ENUM('available', 'reserved', 'borrowed', 'damaged', 'lost') NOT NULL DEFAULT 'available',
-  qr_code_slug VARCHAR(500) UNIQUE NOT NULL,
+  qr_code_slug VARCHAR(500) NOT NULL,
   shelf_location VARCHAR(255),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id),
   FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
-  FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE
+  FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_institution_qr_slug(institution_id, qr_code_slug);
+);
+
+CREATE TABLE favorite_book(
+  favorite_book_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  book_id VARCHAR(36) NOT NULL,
+  favorited_by VARCHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+  FOREIGN KEY (favorited_by) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_member_favorite_book(book_id, favorited_by)
 );
 
 -- created "author" & "book_author" tables for maintaining relation between book and author
@@ -290,4 +309,31 @@ CREATE TABLE book_author(
   PRIMARY KEY(book_id, author_id),
   FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
   FOREIGN KEY (author_id) REFERENCES author(author_id) ON DELETE CASCADE
+);
+
+-- created "category" & "book_category" table to hardening the relation between category and book table
+
+CREATE TABLE category(
+  category_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  created_by_id VARCHAR(36) NOT NULL,
+  category_name VARCHAR(100) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+
+  UNIQUE KEY uq_institution_category (institution_id, category_name)
+);
+
+CREATE TABLE book_category(
+  book_id VARCHAR(36) NOT NULL,
+  category_id VARCHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY(book_id, category_id),
+  FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
 );
