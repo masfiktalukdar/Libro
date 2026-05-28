@@ -445,3 +445,25 @@ CREATE TABLE activity_logs(
 );
 
 -- created financial_transactions table to store spasifically financial transaction records
+
+CREATE TABLE institution_library_fund(
+  transaction_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  transaction_type ENUM('deposit', 'withdrawal') NOT NULL,
+  amount DECIMAL(8,2) NOT NULL,
+  transaction_category ENUM('fine_payment', 'donation', 'book_procurement', 'equipment', 'other') NOT NULL,
+  fine_id VARCHAR(36) NULL,
+  withdrawal_by_member_id VARCHAR(36) NULL,
+  transaction_edit_permission_status ENUM('approved', 'rejected') NOT NULL DEFAULT 'approved',
+  transaction_description VARCHAR(500),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (fine_id) REFERENCES book_fine(fine_id) ON DELETE SET NULL,
+  FOREIGN KEY (withdrawal_by_member_id) REFERENCES institution_member(institution_member_id) ON DELETE SET NULL,
+
+  CONSTRAINT chk_transaction_amount_positive CHECK (amount > 0.00),
+  
+  INDEX idx_institution_ledger (institution_id, transaction_type, amount)
+);
