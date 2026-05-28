@@ -421,3 +421,27 @@ CREATE TABLE book_fine(
   
   CONSTRAINT chk_fine_amount CHECK (fine_amount > 0.00)
 );
+
+-- created activity_logs for storing all the activity happening in Libro
+
+CREATE TABLE activity_logs(
+  log_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  actor_member_id VARCHAR(36) NULL,
+  target_member_id VARCHAR(36) NULL,
+  action_type VARCHAR(100) NOT NULL,
+  entity_name VARCHAR(100) NOT NULL,
+  entity_id VARCHAR(36) NOT NULL,
+  log_description text NOT NULL,
+  ip_address VARCHAR(100),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (actor_member_id) REFERENCES institution_member(institution_member_id) ON DELETE SET NULL,
+  FOREIGN KEY (target_member_id) REFERENCES institution_member(institution_member_id) ON DELETE SET NULL,
+
+  INDEX idx_institution_activity_time (institution_id, created_at DESC),
+  INDEX idx_entity_action_lookup (entity_name, entity_id, action_type)
+);
+
+-- created financial_transactions table to store spasifically financial transaction records
