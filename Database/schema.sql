@@ -28,6 +28,7 @@ CREATE TABLE institution(
   library_closing_time TIME NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL,
   
   -- Constraints
   
@@ -125,33 +126,6 @@ CREATE TABLE automatic_registration_keyword(
   UNIQUE KEY uq_institution_keyword (institution_id, keyword_value)
 );
 
--- created "sudent_profile" table for storing student spasific data
-
-CREATE TABLE student_profile(
-  student_id VARCHAR(36) PRIMARY KEY,
-  institution_member_id VARCHAR(36) NOT NULL,
-  department_id VARCHAR(36) NOT NULL,
-  shift_id VARCHAR(36) NOT NULL,
-  student_roll_no VARCHAR(50) NOT NULL,
-  student_registration_no VARCHAR(50) NOT NULL,
-  account_status ENUM('active', 'flagged', 'banned') NOT NULL DEFAULT 'active',
-  reputation_score DECIMAL(4,2) NOT NULL DEFAULT 5.00,
-  has_library_clarence BOOLEAN NOT NULL DEFAULT TRUE,
-  total_fine_amount DECIMAL(7,2) NOT NULL DEFAULT 0.00,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  deleted_at DATETIME DEFAULT NULL,
-
-  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
-  FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE CASCADE,
-  FOREIGN KEY (shift_id) REFERENCES shifts(shift_id) ON DELETE CASCADE,
-
-  CONSTRAINT chk_reputation_bounds CHECK (reputation_score BETWEEN 0.00 AND 10.00),
-  CONSTRAINT chk_total_fine_positive CHECK (total_fine_amount >= 0.00),
-
-  UNIQUE KEY uq_dept_shift_roll (department_id, shift_id, student_roll_no)
-);
-
 -- created "student_registration_application" table to store pending regestrations of student
 
 CREATE TABLE student_registration_application (
@@ -162,6 +136,7 @@ CREATE TABLE student_registration_application (
   requested_shift_id VARCHAR(36) NOT NULL,
   submitted_roll_no VARCHAR(50) NOT NULL,
   submitted_registration_no VARCHAR(50) NOT NULL,
+  submitted_session VARCHAR(20) NOT NULL,
   document_proof_url VARCHAR(1024) NOT NULL,
   application_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
   reviewed_by_member_id VARCHAR(36) NULL, 
@@ -189,6 +164,34 @@ CREATE TABLE student_registration_proof_document (
   FOREIGN KEY (asset_id) REFERENCES file_assets(asset_id) ON DELETE CASCADE,
   FOREIGN KEY (student_id) REFERENCES student_profile(student_id) ON DELETE CASCADE,
   FOREIGN KEY (application_id) REFERENCES student_registration_application(application_id) ON DELETE SET NULL
+);
+
+-- created "sudent_profile" table for storing student spasific data
+
+CREATE TABLE student_profile(
+  student_id VARCHAR(36) PRIMARY KEY,
+  institution_member_id VARCHAR(36) NOT NULL,
+  department_id VARCHAR(36) NOT NULL,
+  shift_id VARCHAR(36) NOT NULL,
+  student_roll_no VARCHAR(50) NOT NULL,
+  student_registration_no VARCHAR(50) NOT NULL,
+  student_session VARCHAR(20) NOT NULL,
+  account_status ENUM('active', 'flagged', 'banned') NOT NULL DEFAULT 'active',
+  reputation_score DECIMAL(4,2) NOT NULL DEFAULT 5.00,
+  has_library_clarence BOOLEAN NOT NULL DEFAULT TRUE,
+  total_fine_amount DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL,
+
+  FOREIGN KEY (institution_member_id) REFERENCES institution_member(institution_member_id) ON DELETE CASCADE,
+  FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE CASCADE,
+  FOREIGN KEY (shift_id) REFERENCES shifts(shift_id) ON DELETE CASCADE,
+
+  CONSTRAINT chk_reputation_bounds CHECK (reputation_score BETWEEN 0.00 AND 10.00),
+  CONSTRAINT chk_total_fine_positive CHECK (total_fine_amount >= 0.00),
+
+  UNIQUE KEY uq_dept_shift_roll (department_id, shift_id, student_roll_no)
 );
 
 -- created "stuff_profile" table for storing stuff spasific data
