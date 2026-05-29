@@ -98,13 +98,14 @@ CREATE TABLE shifts(
   CONSTRAINT uq_institution_shift UNIQUE (institution_id, shift_name)
 );
 
--- created "document_sample" table for showing the registration document to the students
+-- created "file_assets" table for storing docuemnts for students and institutions to show
 
-CREATE TABLE document_sample(
-  document_id VARCHAR(36) PRIMARY KEY,
-  institution_id VARCHAR(36) NOT NULL,
-  document_url VARCHAR(1024) NOT NULL,
-  document_type ENUM('pdf', 'image') NOT NULL,
+CREATE TABLE file_assets (
+  asset_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NULL, -- NULL = System-wide sample; Filled = Private tenant asset
+  file_url VARCHAR(1024) NOT NULL,
+  file_type ENUM('pdf', 'image') NOT NULL,
+  asset_scope ENUM('system_template', 'tenant_private') NOT NULL DEFAULT 'tenant_private',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
   FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE
@@ -149,6 +150,45 @@ CREATE TABLE student_profile(
   CONSTRAINT chk_total_fine_positive CHECK (total_fine_amount >= 0.00),
 
   UNIQUE KEY uq_dept_shift_roll (department_id, shift_id, student_roll_no)
+);
+
+-- created "student_registration_application" table to store pending regestrations of student
+
+CREATE TABLE student_registration_application (
+  application_id VARCHAR(36) PRIMARY KEY,
+  institution_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL, 
+  requested_department_id VARCHAR(36) NOT NULL,
+  requested_shift_id VARCHAR(36) NOT NULL,
+  submitted_roll_no VARCHAR(50) NOT NULL,
+  submitted_registration_no VARCHAR(50) NOT NULL,
+  document_proof_url VARCHAR(1024) NOT NULL,
+  application_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  reviewed_by_member_id VARCHAR(36) NULL, 
+  rejection_reason VARCHAR(255) NULL, 
+  
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (reviewed_by_member_id) REFERENCES institution_member(institution_member_id) ON DELETE SET NULL,
+  
+  INDEX idx_pending_applications (institution_id, application_status, created_at ASC)
+);
+
+-- created "student_registration_proof_document" for students to hold there regestration proof documents
+
+CREATE TABLE student_registration_proof_document (
+  asset_id VARCHAR(36) PRIMARY KEY,
+  application_id VARCHAR(36) NULL, -- This should be not null is backend part
+  student_id VARCHAR(36) NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (asset_id) REFERENCES file_assets(asset_id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES student_profile(student_id) ON DELETE CASCADE,
+  FOREIGN KEY (application_id) REFERENCES student_registration_application(application_id) ON DELETE SET NULL
 );
 
 -- created "stuff_profile" table for storing stuff spasific data
@@ -422,7 +462,7 @@ CREATE TABLE book_fine(
   CONSTRAINT chk_fine_amount CHECK (fine_amount > 0.00)
 );
 
--- created activity_logs for storing all the activity happening in Libro
+-- created "activity_logs" table for storing all the activity happening in Libro
 
 CREATE TABLE activity_logs(
   log_id VARCHAR(36) PRIMARY KEY,
@@ -444,7 +484,7 @@ CREATE TABLE activity_logs(
   INDEX idx_entity_action_lookup (entity_name, entity_id, action_type)
 );
 
--- created financial_transactions table to store spasifically financial transaction records
+-- created "financial_transactions" table to store spasifically financial transaction records
 
 CREATE TABLE institution_library_fund(
   transaction_id VARCHAR(36) PRIMARY KEY,
