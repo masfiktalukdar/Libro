@@ -1,6 +1,6 @@
 export type AccountStatus = "active" | "flagged" | "banned";
 
-export interface StudentProfileEntity {
+export interface StudentAccountEntity {
   student_id: string;
   institution_member_id: string;
   department_id: string;
