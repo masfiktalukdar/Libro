@@ -1,17 +1,18 @@
-import { dbPool } from "@config/dbConnect.js";
+import { PoolConnection } from "mysql2/promise";
 import { StudentAccountEntity } from "@modules/student/student.interface.js";
 import { ResultSetHeader } from "mysql2";
 
 export class StudentAccountRepository {
   async createStudentAccount(
     student: StudentAccountEntity,
+    trx: PoolConnection,
   ): Promise<StudentAccountEntity> {
     const createStudentAccountSQL = `
       INSERT INTO student_profile(student_id,institution_member_id,department_id,shift_id,student_roll_no,student_registration_no,student_session,account_status,reputation_score,has_library_clarence,total_fine_amount) 
       VALUES(?,?,?,?,?,?,?,?,?,?,?)
     `;
 
-    await dbPool.execute<ResultSetHeader>(createStudentAccountSQL, [
+    await trx.execute<ResultSetHeader>(createStudentAccountSQL, [
       student.student_id,
       student.institution_member_id,
       student.department_id,
@@ -29,4 +30,4 @@ export class StudentAccountRepository {
   }
 }
 
-export const studentAccountrepository = new StudentAccountRepository();
+export const studentAccountRepository = new StudentAccountRepository();

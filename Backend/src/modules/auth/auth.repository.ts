@@ -7,11 +7,11 @@ import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { Pool, PoolConnection } from "mysql2/promise";
 
 export class AuthRepository {
-  async createUser(user: UserEntity): Promise<UserEntity> {
+  async createUser(user: UserEntity, trx: PoolConnection): Promise<UserEntity> {
     const createUserSQL = `
       INSERT INTO user(user_id, full_name, user_email, user_phone, user_password_hashed, gender, avatar_url) VALUES (?,?,?,?,?,?,?)
     `;
-    await dbPool.execute<ResultSetHeader>(createUserSQL, [
+    await trx.execute<ResultSetHeader>(createUserSQL, [
       user.user_id,
       user.full_name,
       user.user_email,
@@ -24,7 +24,7 @@ export class AuthRepository {
     return user;
   }
 
-  async findEmail(email: string): Promise<UserEntity | null> {
+  async findUserByEmail(email: string): Promise<UserEntity | null> {
     const findEmailSQL = `
       SELECT * FROM 
       user WHERE user_email = ? AND deleted_at IS NULL 
@@ -40,15 +40,14 @@ export class AuthRepository {
 
   async createInstitutionMember(
     institutionMember: InstitutionMemberEntity,
-    connectionTarget?: Pool | PoolConnection,
+    trx: PoolConnection,
   ): Promise<InstitutionMemberEntity> {
-    const connectionRunner = connectionTarget || dbPool;
     const createInstitutionMemberSQL = `
       INSERT INTO institution_member (institution_member_id, institution_id, user_id) 
       VALUES(?,?,?)
     `;
 
-    await connectionRunner.execute(createInstitutionMemberSQL, [
+    await trx.execute(createInstitutionMemberSQL, [
       institutionMember.institution_member_id,
       institutionMember.institution_id,
       institutionMember.user_id,

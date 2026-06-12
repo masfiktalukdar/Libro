@@ -1,4 +1,4 @@
-import mysql, { Pool } from "mysql2/promise";
+import mysql, { Pool, PoolConnection } from "mysql2/promise";
 import env from "dotenv";
 
 env.config();
@@ -24,5 +24,23 @@ export const verifyDatabaseConnection = async (): Promise<void> => {
   } catch (err) {
     console.error("Database initialize failed");
     throw err;
+  }
+};
+
+export const executeTransaction = async <T>(
+  callback: (trx: PoolConnection) => Promise<T>,
+): Promise<T> => {
+  const connection = await dbPool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const result = await callback(connection);
+    await connection.commit();
+    return result;
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
   }
 };
