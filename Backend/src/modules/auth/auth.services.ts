@@ -77,7 +77,7 @@ export class AuthService {
     if (regesteredUser)
       throw new AppError("User with this email already exists", 400);
 
-    const saltedRounds = 20;
+    const saltedRounds = 12;
     const hashedPassword = await bcrypt.hash(
       payload.user_password_plaintext,
       saltedRounds,
@@ -105,7 +105,7 @@ export class AuthService {
       const institutionMemberEntity: InstitutionMemberEntity = {
         institution_member_id: generatedMemberId,
         institution_id: payload.institution_id,
-        user_id: payload.user_id,
+        user_id: generatedUserId,
         created_at: new Date(),
         updated_at: new Date(),
         deleted_at: null,
@@ -120,7 +120,7 @@ export class AuthService {
         const generatedStudentId = crypto.randomUUID();
         const studentAccountEntity: StudentAccountEntity = {
           student_id: generatedStudentId,
-          institution_member_id: payload.institution_member_id,
+          institution_member_id: generatedMemberId,
           department_id: payload.department_id,
           shift_id: payload.shift_id,
           student_roll_no: payload.student_roll_no,
@@ -132,7 +132,7 @@ export class AuthService {
           total_fine_amount: "0.00",
           created_at: new Date(),
           updated_at: new Date(),
-          deleted_at: new Date(),
+          deleted_at: null,
         };
 
         await studentAccountRepository.createStudentAccount(
@@ -143,7 +143,7 @@ export class AuthService {
         const generatedStaffId = crypto.randomUUID();
         const staffAccountEntity: StaffAccountEntity = {
           staff_id: generatedStaffId,
-          institution_member_id: payload.institution_member_id,
+          institution_member_id: generatedMemberId,
           staff_employee_id: payload.staff_employee_id,
           about_staff: payload.about_staff,
           chamber_location: payload.chamber_location,

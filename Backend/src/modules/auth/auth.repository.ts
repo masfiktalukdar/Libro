@@ -4,7 +4,7 @@ import {
   InstitutionMemberEntity,
 } from "@modules/auth/auth.interface.js";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
-import { Pool, PoolConnection } from "mysql2/promise";
+import { PoolConnection } from "mysql2/promise";
 
 export class AuthRepository {
   async createUser(user: UserEntity, trx: PoolConnection): Promise<UserEntity> {
@@ -25,6 +25,9 @@ export class AuthRepository {
   }
 
   async findUserByEmail(email: string): Promise<UserEntity | null> {
+    if (!email || email.trim().length === 0) return null;
+
+    const normalized = email.toLocaleLowerCase().trim();
     const findEmailSQL = `
       SELECT * FROM 
       user WHERE user_email = ? AND deleted_at IS NULL 
@@ -32,10 +35,10 @@ export class AuthRepository {
     `;
 
     const [emails] = await dbPool.execute<RowDataPacket[]>(findEmailSQL, [
-      email.toLocaleLowerCase().trim(),
+      normalized,
     ]);
-    if (email.length === 0) return null;
-    return emails[0] as UserEntity;
+
+    return (emails[0] as UserEntity) || null;
   }
 
   async createInstitutionMember(
