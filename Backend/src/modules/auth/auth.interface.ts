@@ -37,3 +37,28 @@ export type AddInstitutionMemberDTO = Pick<
   InstitutionMemberEntity,
   "institution_id" | "user_id"
 >;
+
+export interface RegisterInstitutionalUserDTO {
+  full_name: string;
+  user_email: string;
+  user_phone: string;
+  user_password_plaintext: string;
+  gender: Gender;
+  avatar_url?: string | null;
+
+  institution_id: string;
+  user_id: string;
+  role: "student" | "staff";
+
+  institution_member_id: string;
+  department_id: string;
+  shift_id: string;
+  student_roll_no: string;
+  student_registration_no: string;
+  student_session: string;
+
+  staff_employee_id: string;
+  about_staff: string;
+  chamber_location: string;
+  joining_date: Date;
+}

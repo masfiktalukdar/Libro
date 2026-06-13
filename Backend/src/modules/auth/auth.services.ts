@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { executeTransaction } from "@config/dbConnect.js";
+import { RegisterInstitutionalUserDTO } from "@modules/auth/auth.interface.js";
 import { authRepository } from "@modules/auth/auth.repository.js";
 import { studentAccountRepository } from "@modules/student/student.repository.js";
 import { StudentAccountEntity } from "@modules/student/student.interface.js";
@@ -14,8 +15,62 @@ import {
 
 export class AuthService {
   async registerInstitutionalUser(
-    payload: any,
+    payload: RegisterInstitutionalUserDTO,
   ): Promise<{ memberId: string; userId: string; success: boolean }> {
+    // Throw error if there is no request body
+    if (!payload) {
+      throw new AppError("Request body is required", 400);
+    }
+
+    // Checking the required fields
+    const requiredFields: Array<keyof RegisterInstitutionalUserDTO> = [
+      "full_name",
+      "user_email",
+      "user_phone",
+      "user_password_plaintext",
+      "gender",
+      "institution_id",
+      "role",
+    ];
+
+    for (const field of requiredFields) {
+      if (!payload[field]) {
+        throw new AppError(`${field} is required`, 400);
+      }
+    }
+
+    // student spasific check
+    if (payload.role === "student") {
+      const requiredStudentFields: Array<keyof RegisterInstitutionalUserDTO> = [
+        "department_id",
+        "shift_id",
+        "student_roll_no",
+        "student_registration_no",
+        "student_session",
+      ];
+
+      for (const field of requiredStudentFields) {
+        if (!payload[field]) {
+          throw new AppError(`${field} is required for student`, 400);
+        }
+      }
+    }
+
+    // staff spasific check
+    if (payload.role === "staff") {
+      const requiredStaffFields: Array<keyof RegisterInstitutionalUserDTO> = [
+        "staff_employee_id",
+        "joining_date",
+      ];
+
+      for (const field of requiredStaffFields) {
+        if (!payload[field]) {
+          throw new AppError(`${field} is required for staff`, 400);
+        }
+      }
+    }
+
+    // Finding user by email
     const regesteredUser = await authRepository.findUserByEmail(
       payload.user_email,
     );
@@ -35,7 +90,7 @@ export class AuthService {
       const userEntity: UserEntity = {
         user_id: generatedUserId,
         full_name: payload.full_name,
-        user_password_hashed: payload.user_password_hashed,
+        user_password_hashed: hashedPassword,
         user_email: payload.user_email,
         user_phone: payload.user_phone,
         gender: payload.gender,
@@ -61,7 +116,7 @@ export class AuthService {
         trxConnection,
       );
 
-      if (payload.role == "student") {
+      if (payload.role === "student") {
         const generatedStudentId = crypto.randomUUID();
         const studentAccountEntity: StudentAccountEntity = {
           student_id: generatedStudentId,
@@ -84,7 +139,7 @@ export class AuthService {
           studentAccountEntity,
           trxConnection,
         );
-      } else if (payload.role == "staff") {
+      } else if (payload.role === "staff") {
         const generatedStaffId = crypto.randomUUID();
         const staffAccountEntity: StaffAccountEntity = {
           staff_id: generatedStaffId,
