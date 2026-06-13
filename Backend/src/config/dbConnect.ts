@@ -1,4 +1,5 @@
 import mysql, { Pool, PoolConnection } from "mysql2/promise";
+import { AppError } from "@utils/appError.js";
 import env from "dotenv";
 
 env.config();
@@ -13,6 +14,8 @@ export const dbPool: Pool = mysql.createPool({
   queueLimit: 10,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
+  // Fail fast when the server cannot be reached
+  connectTimeout: parseInt(process.env.DB_CONNECT_TIMEOUT || "10000", 10),
 });
 
 export const verifyDatabaseConnection = async (): Promise<void> => {
@@ -30,7 +33,16 @@ export const verifyDatabaseConnection = async (): Promise<void> => {
 export const executeTransaction = async <T>(
   callback: (trx: PoolConnection) => Promise<T>,
 ): Promise<T> => {
-  const connection = await dbPool.getConnection();
+  let connection!: PoolConnection;
+
+  try {
+    connection = await dbPool.getConnection();
+  } catch (err) {
+    throw new AppError(
+      `Unable to acquire database connection: ${(err as Error).message || String(err)}`,
+      500,
+    );
+  }
 
   try {
     await connection.beginTransaction();
