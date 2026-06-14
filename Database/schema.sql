@@ -5,6 +5,31 @@
 CREATE DATABASE libro;
 USE libro;
 
+-- Creating "institution_registration_request" table for holding initial institution creation request
+
+CREATE TABLE institution_registration_request(
+  institution_id VARCHAR(36) PRIMARY KEY,
+  institution_name VARCHAR(255) NOT NULL,
+  institution_logo_url VARCHAR(1024),
+  institution_email VARCHAR(255) UNIQUE NOT NULL,
+  institution_founding_year SMALLINT UNSIGNED NOT NULL,
+  institution_eiin_number VARCHAR(20) UNIQUE NOT NULL,
+  institution_location VARCHAR(250) NOT NULL,
+  institution_type ENUM('university', 'polytechnic') NOT NULL,
+  registration_request_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending';
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME DEFAULT NULL,
+  
+  -- Constraints
+  
+  CONSTRAINT chk_registration_founding_year CHECK (institution_founding_year >= 1000),
+
+  
+  -- Indexes
+  INDEX idx_institute_name (institution_name)
+);
+
 -- Creating "institution" table for initial institution creation cause this is a multi tannet saas.
 
 CREATE TABLE institution(
