@@ -5,13 +5,17 @@ export type MembershipFeeType =
   | "per_month"
   | "per_semester"
   | "per_year";
+export type InstitutionRegistrationRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected";
 
 export interface InstitutionEntity {
   institution_id: string;
   institution_name: string;
   institution_short_form: string;
   institution_slug: string;
-  institution_logo_url?: string | null;
+  institution_logo_url: string | null;
   institution_email: string;
   institution_founding_year: number;
   institution_eiin_number: string;
@@ -43,4 +47,6 @@ export type InstitutionRegistrationRequstEntity = Omit<
   | "reservation_expiry_in_minutes"
   | "library_opening_time"
   | "library_closing_time"
->;
+> & {
+  registration_request_status: InstitutionRegistrationRequestStatus;
+};
