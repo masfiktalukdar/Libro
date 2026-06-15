@@ -1,12 +1,13 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { executeTransaction } from "@config/dbConnect.js";
-import { RegisterInstitutionalUserDTO } from "@modules/auth/auth.interface.js";
+import { RegisterInstitutionalUserPayload } from "@modules/auth/auth.interface.js";
 import { authRepository } from "@modules/auth/auth.repository.js";
 import { studentAccountRepository } from "@modules/student/student.repository.js";
 import { StudentAccountEntity } from "@modules/student/student.interface.js";
 import { staffAccountRepository } from "@modules/staff/staff.repository.js";
 import { StaffAccountEntity } from "@modules/staff/staff.interface.js";
+import checkRequiredFields from "@utils/checkRequiredFields.js";
 import { AppError } from "@utils/appError.js";
 import {
   UserEntity,
@@ -15,7 +16,7 @@ import {
 
 export class AuthService {
   async registerInstitutionalUser(
-    payload: RegisterInstitutionalUserDTO,
+    payload: RegisterInstitutionalUserPayload,
   ): Promise<{ memberId: string; userId: string; success: boolean }> {
     // Throw error if there is no request body
     if (!payload) {
@@ -23,7 +24,7 @@ export class AuthService {
     }
 
     // Checking the required fields
-    const requiredFields: Array<keyof RegisterInstitutionalUserDTO> = [
+    const requiredFields: Array<keyof RegisterInstitutionalUserPayload> = [
       "full_name",
       "user_email",
       "user_phone",
@@ -33,15 +34,13 @@ export class AuthService {
       "role",
     ];
 
-    for (const field of requiredFields) {
-      if (!payload[field]) {
-        throw new AppError(`${field} is required`, 400);
-      }
-    }
+    checkRequiredFields(requiredFields, payload);
 
     // student spasific check
     if (payload.role === "student") {
-      const requiredStudentFields: Array<keyof RegisterInstitutionalUserDTO> = [
+      const requiredStudentFields: Array<
+        keyof RegisterInstitutionalUserPayload
+      > = [
         "department_id",
         "shift_id",
         "student_roll_no",
@@ -49,34 +48,24 @@ export class AuthService {
         "student_session",
       ];
 
-      for (const field of requiredStudentFields) {
-        if (!payload[field]) {
-          throw new AppError(`${field} is required for student`, 400);
-        }
-      }
+      checkRequiredFields(requiredStudentFields, payload);
     }
 
     // staff spasific check
     if (payload.role === "staff") {
-      const requiredStaffFields: Array<keyof RegisterInstitutionalUserDTO> = [
-        "staff_employee_id",
-        "joining_date",
-      ];
+      const requiredStaffFields: Array<keyof RegisterInstitutionalUserPayload> =
+        ["staff_employee_id", "joining_date"];
 
-      for (const field of requiredStaffFields) {
-        if (!payload[field]) {
-          throw new AppError(`${field} is required for staff`, 400);
-        }
-      }
+      checkRequiredFields(requiredStaffFields, payload);
     }
 
     // Finding user by email
     const regesteredUser = await authRepository.findUserByEmail(
       payload.user_email,
     );
-    if (regesteredUser)
+    if (regesteredUser) {
       throw new AppError("User with this email already exists", 400);
-
+    }
     const saltedRounds = 12;
     const hashedPassword = await bcrypt.hash(
       payload.user_password_plaintext,

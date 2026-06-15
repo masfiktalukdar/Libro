@@ -50,3 +50,5 @@ export type InstitutionRegistrationRequstEntity = Omit<
 > & {
   registration_request_status: InstitutionRegistrationRequestStatus;
 };
+
+export type InstitutionRegistrationRequstPayload = InstitutionEntity;

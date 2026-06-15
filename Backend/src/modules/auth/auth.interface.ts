@@ -38,7 +38,7 @@ export type AddInstitutionMemberDTO = Pick<
   "institution_id" | "user_id"
 >;
 
-export interface RegisterInstitutionalUserDTO {
+export interface RegisterInstitutionalUserPayload {
   full_name: string;
   user_email: string;
   user_phone: string;

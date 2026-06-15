@@ -1,3 +1,4 @@
+import { dbPool } from "@config/dbConnect.js";
 import { PoolConnection } from "mysql2/promise";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { InstitutionRegistrationRequstEntity } from "@modules/institution/institution.interface.js";
@@ -5,7 +6,6 @@ import { InstitutionRegistrationRequstEntity } from "@modules/institution/instit
 export class InstitutionRepository {
   async findInstitutionRequstByEmail(
     email: string,
-    trx: PoolConnection,
   ): Promise<InstitutionRegistrationRequstEntity | null> {
     if (!email || email.trim().length === 0) return null;
     const normalizedInstitutionRegistrationRequstEmail =
@@ -16,7 +16,7 @@ export class InstitutionRepository {
       WHERE institution_email = ? AND deleted_at = null LIMIT 1
     `;
 
-    const [emails] = await trx.execute<RowDataPacket[]>(
+    const [emails] = await dbPool.execute<RowDataPacket[]>(
       findInstitutionRequstByEmailSQL,
       [normalizedInstitutionRegistrationRequstEmail],
     );
@@ -48,3 +48,5 @@ export class InstitutionRepository {
     return institutionRegistrationRequest;
   }
 }
+
+export const institutionRepository = new InstitutionRepository();
