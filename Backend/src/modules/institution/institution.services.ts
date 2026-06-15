@@ -91,7 +91,7 @@ export class InstitutionServices {
         );
         return {
           success: true,
-          message: "Institution request is changed successfully",
+          message: `Institution request is changed to ${statusPayload} successfully`,
           institutionRequestId: institutionRequestIdPayload,
         };
       } catch (err) {

@@ -32,10 +32,15 @@ export class InstitutionController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const institutionRequestId = req.get("institution_request_id") ?? "";
-      const statusPayload = req.get("registration_request_status") ?? "";
+      const institutionRequestId = req.query.institution_request_id as string;
+      const statusPayload = req.query.registration_request_status as string;
 
-      if (institutionRequestId === "" || null || statusPayload === "" || null) {
+      if (
+        institutionRequestId === "" ||
+        institutionRequestId === undefined ||
+        statusPayload === "" ||
+        statusPayload === undefined
+      ) {
         throw new AppError(
           "Please provide institutionRequestId and statusPayload properly",
           400,
