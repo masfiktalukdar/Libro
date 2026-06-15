@@ -8,7 +8,7 @@ USE libro;
 -- Creating "institution_registration_request" table for holding initial institution creation request
 
 CREATE TABLE institution_registration_request(
-  institution_id VARCHAR(36) PRIMARY KEY,
+  institution_request_id VARCHAR(36) PRIMARY KEY,
   institution_name VARCHAR(255) NOT NULL,
   institution_logo_url VARCHAR(1024),
   institution_email VARCHAR(255) UNIQUE NOT NULL,

@@ -36,6 +36,7 @@ export interface InstitutionEntity {
 
 export type InstitutionRegistrationRequstEntity = Omit<
   InstitutionEntity,
+  | "institution_id"
   | "institution_short_form"
   | "institution_slug"
   | "student_approval_system"
@@ -49,6 +50,7 @@ export type InstitutionRegistrationRequstEntity = Omit<
   | "library_closing_time"
 > & {
   registration_request_status: InstitutionRegistrationRequestStatus;
+  institution_request_id: string;
 };
 
 export type InstitutionRegistrationRequstPayload = InstitutionEntity;

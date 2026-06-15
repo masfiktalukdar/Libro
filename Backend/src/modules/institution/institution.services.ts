@@ -6,10 +6,11 @@ import checkRequiredFields from "@utils/checkRequiredFields.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionServices {
+  // Creating the registration request
   async createInstitutionRegistrationRequest(
     payload: InstitutionRegistrationRequstEntity,
   ): Promise<{
-    institutionId: string;
+    institutionRequestId: string;
     success: boolean;
   }> {
     // Throw error if there is no request body
@@ -39,11 +40,11 @@ export class InstitutionServices {
     }
     return await executeTransaction(async (trxConnection) => {
       try {
-        const generatedInstitutionId = crypto.randomUUID();
+        const generatedInstitutionRequestId = crypto.randomUUID();
 
         const institutionRegistrationRequstEntity: InstitutionRegistrationRequstEntity =
           {
-            institution_id: generatedInstitutionId,
+            institution_request_id: generatedInstitutionRequestId,
             institution_name: payload.institution_name,
             institution_logo_url: payload.institution_logo_url || null,
             institution_email: payload.institution_email,
@@ -63,11 +64,38 @@ export class InstitutionServices {
         );
 
         return {
-          institutionId: generatedInstitutionId,
+          institutionRequestId: generatedInstitutionRequestId,
           success: true,
         };
       } catch (err) {
         throw new AppError(`Unexpected db error: ${err}`, 500);
+      }
+    });
+  }
+
+  // Editing the registration request
+  async editRegistrationRequest(
+    institutionRequestIdPayload: string,
+    statusPayload: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    institutionRequestId: string;
+  }> {
+    return await executeTransaction(async (trxConnection) => {
+      try {
+        await institutionRepository.editInstitutionRegistrationRequest(
+          institutionRequestIdPayload,
+          statusPayload,
+          trxConnection,
+        );
+        return {
+          success: true,
+          message: "Institution request is changed successfully",
+          institutionRequestId: institutionRequestIdPayload,
+        };
+      } catch (err) {
+        throw new AppError(`Unexpected error occoured ${err}`, 500);
       }
     });
   }
