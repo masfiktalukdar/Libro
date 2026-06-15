@@ -72,3 +72,5 @@ export class InstitutionServices {
     });
   }
 }
+
+export const institutionServices = new InstitutionServices();
