@@ -45,7 +45,7 @@ export class InstitutionServices {
           {
             institution_id: generatedInstitutionId,
             institution_name: payload.institution_name,
-            institution_logo_url: payload.institution_logo_url,
+            institution_logo_url: payload.institution_logo_url || null,
             institution_email: payload.institution_email,
             institution_founding_year: payload.institution_founding_year,
             institution_eiin_number: payload.institution_eiin_number,
@@ -67,7 +67,7 @@ export class InstitutionServices {
           success: true,
         };
       } catch (err) {
-        throw new AppError(`Unexpected server error happend ${err}`, 500);
+        throw new AppError(`Unexpected db error: ${err}`, 500);
       }
     });
   }

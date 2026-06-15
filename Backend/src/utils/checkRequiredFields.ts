@@ -6,7 +6,7 @@ export default function checkRequiredFields(
 ) {
   for (const field of requiredFields) {
     if (!payload[field]) {
-      throw new AppError(`${field} is required for student`, 400);
+      throw new AppError(`${field} is required`, 400);
     }
   }
 }

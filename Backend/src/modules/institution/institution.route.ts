@@ -3,7 +3,7 @@ import { institutionController } from "@modules/institution/institution.controll
 
 const router = Router();
 router.post(
-  "/instituion-registration-requst",
+  "/instituion-registration-request",
   institutionController.institutionRequestRegister,
 );
 
