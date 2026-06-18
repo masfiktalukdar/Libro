@@ -68,6 +68,9 @@ export class InstitutionServices {
           success: true,
         };
       } catch (err) {
+        if (err instanceof AppError) {
+          throw err;
+        }
         throw new AppError(`Unexpected db error: ${err}`, 500);
       }
     });
@@ -95,6 +98,9 @@ export class InstitutionServices {
           institutionRequestId: institutionRequestIdPayload,
         };
       } catch (err) {
+        if (err instanceof AppError) {
+          throw err;
+        }
         throw new AppError(`Unexpected error occoured ${err}`, 500);
       }
     });

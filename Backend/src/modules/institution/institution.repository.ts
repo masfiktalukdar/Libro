@@ -51,6 +51,9 @@ export class InstitutionRepository {
 
       return institutionRegistrationRequest;
     } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
       throw new AppError(`Unexpected error occoured ${err}`, 400);
     }
   }
@@ -81,7 +84,13 @@ export class InstitutionRepository {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const institutionRegistrationRequest =
-        this.findInstitutionRegistrationRequest(institutionRequestId);
+        await this.findInstitutionRegistrationRequest(institutionRequestId);
+      if (
+        !institutionRegistrationRequest ||
+        institutionRegistrationRequest === null
+      ) {
+        throw new AppError("No request found to edit", 400);
+      }
 
       const editInstitutionRegistrationSQL = `
         UPDATE institution_registration_request SET registration_request_status = ?
@@ -92,12 +101,17 @@ export class InstitutionRepository {
       ]);
       return {
         success: true,
-        message: `${(await institutionRegistrationRequest).institution_name} is ${(await institutionRegistrationRequest).registration_request_status}`,
+        message: `${institutionRegistrationRequest.institution_name} is ${institutionRegistrationRequest.registration_request_status}`,
       };
     } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
+
+  // create a new institution
 }
 
 export const institutionRepository = new InstitutionRepository();
