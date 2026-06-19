@@ -1,7 +1,10 @@
 import { dbPool } from "@config/dbConnect.js";
 import { PoolConnection } from "mysql2/promise";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
-import { InstitutionRegistrationRequstEntity } from "@modules/institution/institution.interface.js";
+import {
+  InstitutionRegistrationRequstEntity,
+  InstitutionEntity,
+} from "@modules/institution/institution.interface.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionRepository {
@@ -112,6 +115,76 @@ export class InstitutionRepository {
   }
 
   // create a new institution
+
+  // Creating a new institution
+  async createNewInstitution(
+    institutionRequestIdPayload: string,
+    payload: InstitutionEntity,
+    trx: PoolConnection,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const institutionRegistrationRequest =
+        await this.findInstitutionRegistrationRequest(
+          institutionRequestIdPayload,
+        );
+      if (
+        !institutionRegistrationRequest ||
+        institutionRegistrationRequest === null
+      ) {
+        throw new AppError("No request found by this id", 400);
+      }
+      const {
+        institution_name,
+        institution_email,
+        institution_logo_url,
+        institution_founding_year,
+        institution_eiin_number,
+        institution_location,
+        institution_type,
+        registration_request_status,
+      } = institutionRegistrationRequest;
+
+      if (registration_request_status !== "approved") {
+        throw new AppError("This institution request is not approved", 400);
+      }
+
+      const createNewInstitutionSQL = `
+      INSERT INTO institution(institution_id, institution_name, institution_short_form, institution_slug, institution_logo_url, institution_email, institution_founding_year, institution_eiin_number, institution_location, institution_type, student_approval_system, membership_fee_type, membership_fee_amount, student_book_borrow_limit, student_fine_limit_amount, reservation_expiry_in_minutes, library_opening_time, library_closing_time) 
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `;
+
+      await trx.execute<ResultSetHeader>(createNewInstitutionSQL, [
+        payload.institution_id,
+        institution_name,
+        payload.institution_short_form,
+        payload.institution_slug,
+        payload.institution_logo_url && institution_logo_url,
+        institution_email,
+        institution_founding_year,
+        institution_eiin_number,
+        institution_location,
+        institution_type,
+        payload.student_approval_system,
+        payload.membership_fee_type,
+        payload.membership_fee_amount,
+        payload.student_book_borrow_limit,
+        payload.student_fine_limit_amount,
+        payload.reservation_expiry_in_minutes,
+        payload.library_opening_time,
+        payload.library_closing_time,
+      ]);
+
+      return {
+        success: true,
+        message: `${institution_name} has been created successfully`,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error accoured: ${err}`, 500);
+    }
+  }
 }
 
 export const institutionRepository = new InstitutionRepository();
