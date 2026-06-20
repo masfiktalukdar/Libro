@@ -39,6 +39,7 @@ CREATE TABLE institution(
   institution_slug VARCHAR(200) NOT NULL UNIQUE,
   institution_logo_url VARCHAR(1024),
   institution_email VARCHAR(255) UNIQUE NOT NULL,
+  institution_password_hashed VARCHAR(255) NULL,
   institution_founding_year SMALLINT UNSIGNED NOT NULL,
   institution_eiin_number VARCHAR(20) UNIQUE NOT NULL,
   institution_location VARCHAR(250) NOT NULL,
