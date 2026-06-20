@@ -114,7 +114,29 @@ export class InstitutionRepository {
     }
   }
 
-  // create a new institution
+  // find a new institution with email and eiin number
+  async isInstitutionExists(
+    institutionEmail: string,
+    institutionEiinNumber: string,
+    trx: PoolConnection,
+  ): Promise<boolean> {
+    try {
+      const findInstitutionSQL = `
+        SELECT * FROM institution WHERE institution_email = ? OR institution_eiin_number = ?
+      `;
+      const [result] = await trx.execute(findInstitutionSQL, [
+        institutionEmail,
+        institutionEiinNumber,
+      ]);
+      if (!result || result === undefined) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
 
   // Creating a new institution
   async createNewInstitution(

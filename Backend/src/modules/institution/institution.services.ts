@@ -111,7 +111,7 @@ export class InstitutionServices {
     });
   }
 
-  // Create new institution
+  // * Create new institution
   async createNewInstitution(
     institutionRequestId: string,
     payload: InstitutionEntity,
@@ -139,6 +139,7 @@ export class InstitutionServices {
         "library_closing_time",
       ];
       checkRequiredFields(requiredFields, payload);
+
       return executeTransaction(async (trxConnection) => {
         // Getting the required data from the previous requst id
         const institutionRegistrationRequest =
@@ -158,13 +159,27 @@ export class InstitutionServices {
 
         if (
           !institutionRegistrationRequest ||
-          institutionRegistrationRequest === null
+          institutionRegistrationRequest === undefined
         ) {
           throw new AppError("No request found by this id", 400);
         }
 
         if (registration_request_status !== "approved") {
           throw new AppError("This institution request is not approved", 400);
+        }
+
+        // check if the institution already exists with the same email or eiin number
+        const isInstitutionExists =
+          await institutionRepository.isInstitutionExists(
+            institution_email,
+            institution_eiin_number,
+            trxConnection,
+          );
+        if (isInstitutionExists) {
+          throw new AppError(
+            "Error: Another institution exists with the same email or eiin number",
+            400,
+          );
         }
 
         // Creating actual id for the institute
