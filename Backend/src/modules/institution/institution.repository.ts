@@ -118,52 +118,27 @@ export class InstitutionRepository {
 
   // Creating a new institution
   async createNewInstitution(
-    institutionRequestIdPayload: string,
     payload: InstitutionEntity,
     trx: PoolConnection,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const institutionRegistrationRequest =
-        await this.findInstitutionRegistrationRequest(
-          institutionRequestIdPayload,
-        );
-      if (
-        !institutionRegistrationRequest ||
-        institutionRegistrationRequest === null
-      ) {
-        throw new AppError("No request found by this id", 400);
-      }
-      const {
-        institution_name,
-        institution_email,
-        institution_logo_url,
-        institution_founding_year,
-        institution_eiin_number,
-        institution_location,
-        institution_type,
-        registration_request_status,
-      } = institutionRegistrationRequest;
-
-      if (registration_request_status !== "approved") {
-        throw new AppError("This institution request is not approved", 400);
-      }
-
       const createNewInstitutionSQL = `
-      INSERT INTO institution(institution_id, institution_name, institution_short_form, institution_slug, institution_logo_url, institution_email, institution_founding_year, institution_eiin_number, institution_location, institution_type, student_approval_system, membership_fee_type, membership_fee_amount, student_book_borrow_limit, student_fine_limit_amount, reservation_expiry_in_minutes, library_opening_time, library_closing_time) 
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      INSERT INTO institution(institution_id, institution_name, institution_short_form, institution_slug, institution_logo_url, institution_email, institution_password_hashed, institution_founding_year, institution_eiin_number, institution_location, institution_type, student_approval_system, membership_fee_type, membership_fee_amount, student_book_borrow_limit, student_fine_limit_amount, reservation_expiry_in_minutes, library_opening_time, library_closing_time) 
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `;
 
       await trx.execute<ResultSetHeader>(createNewInstitutionSQL, [
         payload.institution_id,
-        institution_name,
+        payload.institution_name,
         payload.institution_short_form,
         payload.institution_slug,
-        payload.institution_logo_url && institution_logo_url,
-        institution_email,
-        institution_founding_year,
-        institution_eiin_number,
-        institution_location,
-        institution_type,
+        payload.institution_logo_url,
+        payload.institution_email,
+        payload.institution_password_hashed,
+        payload.institution_founding_year,
+        payload.institution_eiin_number,
+        payload.institution_location,
+        payload.institution_type,
         payload.student_approval_system,
         payload.membership_fee_type,
         payload.membership_fee_amount,
@@ -176,7 +151,7 @@ export class InstitutionRepository {
 
       return {
         success: true,
-        message: `${institution_name} has been created successfully`,
+        message: `${payload.institution_name} has been created successfully`,
       };
     } catch (err) {
       if (err instanceof AppError) {

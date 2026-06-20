@@ -6,7 +6,11 @@ export default function checkRequiredFields(
 ) {
   for (const field of requiredFields) {
     if (!payload[field]) {
-      throw new AppError(`${field} is required`, 400);
+      const formatted = field
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+      throw new AppError(`${formatted} is required`, 400);
     }
   }
 }

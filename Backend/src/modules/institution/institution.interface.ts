@@ -17,6 +17,8 @@ export interface InstitutionEntity {
   institution_slug: string;
   institution_logo_url: string | null;
   institution_email: string;
+  institution_password_text?: string;
+  institution_password_hashed: string;
   institution_founding_year: number;
   institution_eiin_number: string;
   institution_location: string;
@@ -38,6 +40,8 @@ export type InstitutionRegistrationRequstEntity = Omit<
   InstitutionEntity,
   | "institution_id"
   | "institution_short_form"
+  | "institution_password_text"
+  | "institution_password_hashed"
   | "institution_slug"
   | "student_approval_system"
   | "membership_fee_amount"
