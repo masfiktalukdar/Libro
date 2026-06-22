@@ -30,6 +30,12 @@ class InstitutionMiddleware {
       const token = authorizationHeader.split(" ")[1];
       // getting the raw paylaod data
       const requestId = req.query.institution_request_id as string;
+      if (!requestId || requestId === undefined) {
+        throw new AppError(
+          "Request Id is required for creating new Institution",
+          400,
+        );
+      }
       const institutionRegistrationRequest =
         await institutionRepository.findInstitutionRegistrationRequest(
           requestId,

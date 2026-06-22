@@ -166,30 +166,19 @@ export class InstitutionServices {
   async createNewInstitution(
     institutionRequestId: string,
     payload: InstitutionEntity,
-  ): Promise<{ success: boolean; message: string; data: InstitutionEntity }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: Omit<InstitutionEntity, "institution_password_hashed">;
+  }> {
     try {
       // Checking the input paylaod data
-      if (!payload) {
+      if (!payload || payload === undefined) {
         throw new AppError("Request body is required", 400);
       }
-      if (!institutionRequestId) {
+      if (!institutionRequestId || institutionRequestId === undefined) {
         throw new AppError("Institution Request id is required", 400);
       }
-
-      // Checking the required fields
-      const requiredFields = [
-        "institution_short_form",
-        "institution_slug",
-        "institution_password_hashed",
-        "membership_fee_type",
-        "membership_fee_amount",
-        "student_book_borrow_limit",
-        "student_fine_limit_amount",
-        "reservation_expiry_in_minutes",
-        "library_opening_time",
-        "library_closing_time",
-      ];
-      checkRequiredFields(requiredFields, payload);
 
       return executeTransaction(async (trxConnection) => {
         // Getting the required data from the previous requst id
@@ -243,12 +232,26 @@ export class InstitutionServices {
           institution_name,
           generatedInstitutionId,
         );
+
         //creating password hashed
         const plainPassword = payload.institution_password_text;
         if (plainPassword === undefined) {
           throw new AppError("Password field cannot be undefined", 400);
         }
         const hashedPassword = await bcrypt.hash(plainPassword, 12);
+
+        // Checking the required fields
+        const requiredFields = [
+          "institution_short_form",
+          "membership_fee_type",
+          "membership_fee_amount",
+          "student_book_borrow_limit",
+          "student_fine_limit_amount",
+          "reservation_expiry_in_minutes",
+          "library_opening_time",
+          "library_closing_time",
+        ];
+        checkRequiredFields(requiredFields, payload);
 
         // Creating full institution object
         const institutionCreationEntity: InstitutionEntity = {
@@ -282,10 +285,13 @@ export class InstitutionServices {
           trxConnection,
         );
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { institution_password_hashed, ...institutionCreationResult } =
+          institutionCreationEntity;
         return {
           success: true,
           message: `${institution_name} has been created successfully`,
-          data: institutionCreationEntity,
+          data: institutionCreationResult,
         };
       });
     } catch (err) {
