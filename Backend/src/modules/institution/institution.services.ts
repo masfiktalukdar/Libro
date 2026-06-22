@@ -131,13 +131,16 @@ export class InstitutionServices {
 
       if (
         !institutionRegistrationRequest ||
-        institutionRegistrationRequest === undefined
+        institutionRegistrationRequest === null
       ) {
         throw new AppError("No request found by this id", 400);
       }
 
       if (registration_request_status !== "approved") {
-        throw new AppError("This institution request is not approved", 400);
+        throw new AppError(
+          "This institution creation request is not approved",
+          400,
+        );
       }
 
       // creating payload for jwt
@@ -207,13 +210,16 @@ export class InstitutionServices {
 
         if (
           !institutionRegistrationRequest ||
-          institutionRegistrationRequest === undefined
+          institutionRegistrationRequest === null
         ) {
           throw new AppError("No request found by this id", 400);
         }
 
         if (registration_request_status !== "approved") {
-          throw new AppError("This institution request is not approved", 400);
+          throw new AppError(
+            "This institution creation request is not approved",
+            400,
+          );
         }
 
         // check if any institution already exists with the same email or eiin number

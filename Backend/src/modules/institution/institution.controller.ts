@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { institutionServices } from "@modules/institution/institution.services.js";
 import { AppError } from "@/utils/appError.js";
+import { institutionRepository } from "./institution.repository.js";
 
 export class InstitutionController {
   // Controller for institution request registration
@@ -47,6 +48,18 @@ export class InstitutionController {
         );
       }
 
+      const institutionRegistrationRequest =
+        await institutionRepository.findInstitutionRegistrationRequest(
+          institutionRequestId,
+        );
+
+      if (
+        !institutionRegistrationRequest ||
+        institutionRegistrationRequest === null
+      ) {
+        throw new AppError("No request found by this id", 400);
+      }
+
       const institutionRequestEditResult =
         await institutionServices.editRegistrationRequest(
           institutionRequestId,
@@ -57,6 +70,75 @@ export class InstitutionController {
         success: true,
         message: `Institution registration request changed to ${statusPayload} successfully`,
         data: institutionRequestEditResult,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for sending institution registration link
+  async institutionCreationInvitation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const requestId = req.query.institution_request_id as string;
+      if (requestId === undefined || requestId === "") {
+        throw new AppError("Please enter your requestId properly", 400);
+      }
+      const institutionRegistrationRequest =
+        await institutionRepository.findInstitutionRegistrationRequest(
+          requestId,
+        );
+
+      if (
+        !institutionRegistrationRequest ||
+        institutionRegistrationRequest === null
+      ) {
+        throw new AppError("No request found by this id", 400);
+      }
+
+      const { registration_request_status } = institutionRegistrationRequest;
+      if (registration_request_status !== "approved") {
+        throw new AppError(
+          "This institution creation request is not approved",
+          400,
+        );
+      }
+
+      const institutionCreationLink =
+        await institutionServices.sendInstitutionCreationInvitation(requestId);
+
+      res.status(201).json({
+        sucess: true,
+        message:
+          "Institution creation invitation link is sent. This link will be expired in 24 hours",
+        data: institutionCreationLink,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for creation new institution
+  async newInstitutionCreation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const requestId = req.query.institution_request_id as string;
+      const institutionResult = await institutionServices.createNewInstitution(
+        requestId,
+        req.body,
+      );
+
+      res.status(201).json({
+        success: true,
+        message:
+          "Institution registration request has been created successfully",
+        data: institutionResult,
       });
     } catch (err) {
       next(err);

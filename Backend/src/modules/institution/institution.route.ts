@@ -14,4 +14,10 @@ router.post(
   institutionController.institutionRequestEdit,
 );
 
+// Sending institution creation link
+router.post(
+  "/sent-institution-creation-link",
+  institutionController.institutionCreationInvitation,
+);
+
 export { router as institutionRouter };
