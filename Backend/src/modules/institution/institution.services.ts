@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { executeTransaction } from "@config/dbConnect.js";
 import { institutionRepository } from "@modules/institution/institution.repository.js";
 import {
@@ -111,6 +112,53 @@ export class InstitutionServices {
     });
   }
 
+  // Send invitation link to create
+  async sendInstitutionCreationInvitation(requestId: string): Promise<string> {
+    try {
+      const JWT_SECRET = process.env.JWT_SECRET;
+      if (JWT_SECRET === undefined)
+        throw new AppError("JWT SECRET shouldn't be undefined", 400);
+
+      const institutionRegistrationRequest =
+        await institutionRepository.findInstitutionRegistrationRequest(
+          requestId,
+        );
+      const {
+        institution_email,
+        institution_eiin_number,
+        registration_request_status,
+      } = institutionRegistrationRequest;
+
+      if (
+        !institutionRegistrationRequest ||
+        institutionRegistrationRequest === undefined
+      ) {
+        throw new AppError("No request found by this id", 400);
+      }
+
+      if (registration_request_status !== "approved") {
+        throw new AppError("This institution request is not approved", 400);
+      }
+
+      // creating payload for jwt
+      const jwtPayload = {
+        requestId,
+        institutionEmail: institution_email,
+        institutionEiinNumber: institution_eiin_number,
+      };
+
+      const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "24h" });
+
+      const registrationURL = `libro.com/institution-registration?id=${requestId}&token=${token}`;
+      return registrationURL;
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured ${err}`, 400);
+    }
+  }
+
   // * Create new institution
   async createNewInstitution(
     institutionRequestId: string,
@@ -168,7 +216,7 @@ export class InstitutionServices {
           throw new AppError("This institution request is not approved", 400);
         }
 
-        // check if the institution already exists with the same email or eiin number
+        // check if any institution already exists with the same email or eiin number
         const isInstitutionExists =
           await institutionRepository.isInstitutionExists(
             institution_email,

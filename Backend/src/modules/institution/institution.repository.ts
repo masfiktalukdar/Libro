@@ -114,7 +114,7 @@ export class InstitutionRepository {
     }
   }
 
-  // find a new institution with email and eiin number
+  // find the existing institution with email and eiin number
   async isInstitutionExists(
     institutionEmail: string,
     institutionEiinNumber: string,
@@ -124,11 +124,11 @@ export class InstitutionRepository {
       const findInstitutionSQL = `
         SELECT * FROM institution WHERE institution_email = ? OR institution_eiin_number = ?
       `;
-      const [result] = await trx.execute(findInstitutionSQL, [
+      const [result] = await trx.execute<RowDataPacket[]>(findInstitutionSQL, [
         institutionEmail,
         institutionEiinNumber,
       ]);
-      if (!result || result === undefined) {
+      if (!result || result === undefined || result.length === 0) {
         return false;
       } else {
         return true;
