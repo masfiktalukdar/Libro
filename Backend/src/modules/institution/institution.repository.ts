@@ -49,7 +49,6 @@ export class InstitutionRepository {
         institutionRegistrationRequest.institution_eiin_number,
         institutionRegistrationRequest.institution_location,
         institutionRegistrationRequest.institution_type,
-        institutionRegistrationRequest.registration_request_status,
       ]);
 
       return institutionRegistrationRequest;

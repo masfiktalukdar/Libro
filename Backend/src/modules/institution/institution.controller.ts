@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { institutionServices } from "@modules/institution/institution.services.js";
-import { AppError } from "@/utils/appError.js";
 import { institutionRepository } from "./institution.repository.js";
+import { AppError } from "@/utils/appError.js";
 
 export class InstitutionController {
   // Controller for institution request registration

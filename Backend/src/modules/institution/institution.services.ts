@@ -7,6 +7,10 @@ import {
   InstitutionEntity,
   InstitutionRegistrationRequstEntity,
 } from "@modules/institution/institution.interface.js";
+import {
+  InstitutionRegistrationInput,
+  InstitutionCreationInput,
+} from "@modules/institution/institution.validator.js";
 import checkRequiredFields from "@utils/checkRequiredFields.js";
 import { createUniqueSlugForInstitution } from "@utils/createUniqueSlug.js";
 import { AppError } from "@/utils/appError.js";
@@ -14,7 +18,7 @@ import { AppError } from "@/utils/appError.js";
 export class InstitutionServices {
   // Creating the registration request
   async createInstitutionRegistrationRequest(
-    payload: InstitutionRegistrationRequstEntity,
+    payload: InstitutionRegistrationInput,
   ): Promise<{
     institutionRequestId: string;
     success: boolean;
@@ -165,7 +169,7 @@ export class InstitutionServices {
   // * Create new institution
   async createNewInstitution(
     institutionRequestId: string,
-    payload: InstitutionEntity,
+    payload: InstitutionCreationInput,
   ): Promise<{
     success: boolean;
     message: string;
@@ -235,7 +239,7 @@ export class InstitutionServices {
 
         //creating password hashed
         const plainPassword = payload.institution_password_text;
-        if (plainPassword === undefined) {
+        if (plainPassword === undefined || plainPassword === null) {
           throw new AppError("Password field cannot be undefined", 400);
         }
         const hashedPassword = await bcrypt.hash(plainPassword, 12);
