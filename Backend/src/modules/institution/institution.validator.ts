@@ -27,7 +27,7 @@ export const institutionRegistrationSchema = z.object({
     .max(255)
     .transform(sanitize),
 
-  institution_email: z.email("Invalid email address format"),
+  institution_email: z.email("Invalid email address"),
 
   institution_founding_year: z
     .number()
@@ -35,10 +35,9 @@ export const institutionRegistrationSchema = z.object({
     .min(1000)
     .max(new Date().getFullYear()),
 
-  institution_eiin_number: cleanString.regex(
-    /^\d+$/,
-    "EIIN number must contain only numeric digits",
-  ),
+  institution_eiin_number: cleanString
+    .regex(/^\d+$/, "EIIN number must contain only numeric digits")
+    .max(20, "EIIN number cannot exceed 20 characters"),
 
   institution_location: cleanString
     .min(5, "Location details are too short")

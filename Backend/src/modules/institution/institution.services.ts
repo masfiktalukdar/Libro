@@ -264,7 +264,7 @@ export class InstitutionServices {
           institution_short_form: payload.institution_short_form,
           institution_slug: uniqueSlug,
           institution_logo_url:
-            payload.institution_logo_url && institution_logo_url,
+            payload.institution_logo_url || institution_logo_url || "",
           institution_email: institution_email,
           institution_password_hashed: hashedPassword,
           institution_founding_year: institution_founding_year,
@@ -305,6 +305,8 @@ export class InstitutionServices {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
+
+  // ! From here, institution edit work will begin
 }
 
 export const institutionServices = new InstitutionServices();
