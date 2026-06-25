@@ -6,6 +6,8 @@ import { globalErrorHandler } from "@utils/globalErrorHandler.js";
 import { authRouter } from "@modules/auth/auth.route.js";
 import { institutionRouter } from "@modules/institution/institution.route.js";
 
+import {emailRateLimit, emailSender} from "@services/emailService.js"
+
 const app = express();
 
 app.use(helmet());
@@ -14,6 +16,8 @@ app.use(express.json());
 // Routes Initialization
 app.use("/api/v1/users", authRouter);
 app.use("/api/v1/institution", institutionRouter);
+
+app.use("/api/v1/send-email", emailRateLimit, emailSender);
 
 // Global Erorr Handler
 app.use(globalErrorHandler);
