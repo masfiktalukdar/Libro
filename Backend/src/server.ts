@@ -1,6 +1,7 @@
 import app from "@/app.js";
 import dotenv from "dotenv";
 import { verifyDatabaseConnection } from "@config/dbConnect.js";
+import { nodemailerVerify } from "@config/nodemailerConnect.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ app.listen(port, () => {
   (async () => {
     try {
       await verifyDatabaseConnection();
+      await nodemailerVerify();
     } catch (err) {
       console.error("Database connection error", err);
       process.exit(1);

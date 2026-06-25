@@ -12,8 +12,8 @@ app.use(helmet());
 app.use(express.json());
 
 // Routes Initialization
-app.use("/users", authRouter);
-app.use("/institution", institutionRouter);
+app.use("/api/v1/users", authRouter);
+app.use("/api/v1/institution", institutionRouter);
 
 // Global Erorr Handler
 app.use(globalErrorHandler);
