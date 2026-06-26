@@ -66,6 +66,18 @@ CREATE TABLE institution(
   INDEX idx_institute_name (institution_name)
 );
 
+-- created "user_otps" table to temporarily store user otp's
+
+CREATE TABLE user_otps (
+    otp_id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    otp VARCHAR(6) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_email (email)
+);
+
 -- "user" and "institute_member" tables creation. "institution_member" is junction table for "institution" and "user" table's many to many relationship.
 
 CREATE TABLE user(
@@ -123,6 +135,16 @@ CREATE TABLE shifts(
   FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
 
   CONSTRAINT uq_institution_shift UNIQUE (institution_id, shift_name)
+);
+
+-- created "institution_holidays" table to store all the holidays of an institution
+
+CREATE TABLE institution_holidays (
+    institution_holidays_id VARCHAR(36) PRIMARY KEY,
+    institution_id VARCHAR(36) NOT NULL,
+    holiday_type ENUM('recurring', 'manual') NOT NULL,
+    holiday_value VARCHAR(50) NOT NULL,
+    FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE
 );
 
 -- created "file_assets" table for storing docuemnts for students and institutions to show

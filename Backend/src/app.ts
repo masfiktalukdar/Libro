@@ -6,7 +6,8 @@ import { globalErrorHandler } from "@utils/globalErrorHandler.js";
 import { authRouter } from "@modules/auth/auth.route.js";
 import { institutionRouter } from "@modules/institution/institution.route.js";
 
-import { emailRateLimit, emailSender } from "@services/emailService.js";
+// import { emailRateLimit, emailSender } from "@services/emailService.js";
+import { otpHandler } from "@services/otpService.js";
 
 const app = express();
 
@@ -17,7 +18,8 @@ app.use(express.json());
 app.use("/api/v1/users", authRouter);
 app.use("/api/v1/institution", institutionRouter);
 
-app.post("/api/v1/services/send-email", emailSender);
+// app.post("/api/v1/services/send-email", emailSender);
+app.post("/api/v1/services/send-otp", otpHandler.sendOTP);
 
 // Global Erorr Handler
 app.use(globalErrorHandler);

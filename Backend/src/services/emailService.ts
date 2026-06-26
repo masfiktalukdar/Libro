@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import env from "dotenv";
 import { rateLimit } from "express-rate-limit";
 import { transporter } from "@config/nodemailerConnect.js";
@@ -17,29 +16,31 @@ export const emailRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
+// interface from Email Payload
+interface EmailPayload {
+  email: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}
+
 // Function for seding email
-export const emailSender = async (req: Request, res: Response) => {
-  if (!req.body) {
-    return res.status(400).json({ error: "Required field is missing" });
-  }
+export const sendEmailUtility = async (payload: EmailPayload) => {
+  const { email, subject, text, html } = payload;
 
-  const { to, subject, text, html } = req.body;
-
-  if (!to || !subject || (!text && !html)) {
-    return res.status(400).json({ error: "Required field is missing" });
+  if (!email || !subject || (!text && !html)) {
+    throw new AppError("Required field is missing", 400);
   }
 
   const fromAddress = process.env.SMTP_FROM_EMAIL || "support.libro@gmail.com";
 
   if (!fromAddress) {
-    return res.status(500).json({
-      error: "SMTP sender address is not configured",
-    });
+    throw new AppError("SMTP sender address is not configured", 500);
   }
 
   const emailOptions = {
     from: `"Libro Team" <${fromAddress}>`,
-    to: to,
+    to: email,
     subject: subject,
     text: text,
     html: html,
@@ -52,21 +53,13 @@ export const emailSender = async (req: Request, res: Response) => {
       (deliveryResult.rejected && deliveryResult.rejected.length > 0) ||
       (deliveryResult.accepted && deliveryResult.accepted.length === 0)
     ) {
-      return res.status(502).json({
-        error:
-          "Brevo accepted the request but did not accept the message for delivery",
-        accepted: deliveryResult.accepted,
-        rejected: deliveryResult.rejected,
-        messageId: deliveryResult.messageId,
-      });
+      throw new AppError(
+        "Email provider accepted request but rejected message delivery",
+        502,
+      );
     }
 
-    return res.status(200).json({
-      message: "Email send successfully",
-      accepted: deliveryResult.accepted,
-      rejected: deliveryResult.rejected,
-      messageId: deliveryResult.messageId,
-    });
+    return deliveryResult;
   } catch (err: unknown) {
     const error = err as {
       message?: string;
@@ -80,8 +73,13 @@ export const emailSender = async (req: Request, res: Response) => {
       error.responseCode === 429;
 
     if (isLimitExceeded) {
-      console.warn("Email sending daily limit exceeded...");
+      console.warn("API email sending daily limit exceeded!");
+      throw new AppError(
+        "Email daily service quota exceeded. Please try again later.",
+        429,
+      );
     }
+
     console.error("Failed to send email:", err);
     throw new AppError("Internal Server Error While Sending Emails", 500);
   }
