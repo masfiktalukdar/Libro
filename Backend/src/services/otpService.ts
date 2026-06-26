@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import { executeTransaction } from "@config/dbConnect.js";
 import { sendEmailUtility } from "@services/emailService.js";
+import { userSignUpOTPTemplate } from "@templates/userSignUpOTP.js";
 import { AppError } from "@utils/appError.js";
 
 // Generate the otp
@@ -50,11 +51,14 @@ class OTPHandler {
           otpExpiery,
         ]);
 
+        // HTML content
+        const emailHTMLContent = userSignUpOTPTemplate(otp);
+
         // email will be send from here
         await sendEmailUtility({
           email: email,
           subject: "Your Libro Security Verification Code",
-          html: `<h3>Your secure code is: <b>${otp}</b></h3><p>Valid for 24 hours.</p>`,
+          html: emailHTMLContent,
         });
 
         res.status(201).json({

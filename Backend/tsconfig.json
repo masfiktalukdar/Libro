@@ -12,7 +12,8 @@
       "@modules/*": ["./src/modules/*"],
       "@middlewares/*": ["./src/middlewares/*"],
       "@utils/*": ["./src/utils/*"],
-      "@services/*": ["./src/services/*"]
+      "@services/*": ["./src/services/*"],
+      "@templates/*": ["./src/templates/*"]
     },
 
     "strict": true,

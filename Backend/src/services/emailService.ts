@@ -6,15 +6,18 @@ import { AppError } from "@utils/appError.js";
 env.config();
 
 // Setting up email rate limiting for express
-export const emailRateLimit = rateLimit({
-  windowMs: 24 * 60 * 60 * 1000,
-  max: 5,
-  message: {
-    error: "Too many emails sent from this IP. Please try again tomorrow.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+export const setEmailRateLimit = (limit: number) => {
+  const emailRateLimit = rateLimit({
+    windowMs: 24 * 60 * 60 * 1000,
+    max: limit,
+    message: {
+      error: "Too many emails sent from this IP. Please try again tomorrow.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  return emailRateLimit;
+};
 
 // interface from Email Payload
 interface EmailPayload {
