@@ -12,13 +12,15 @@ export class InstitutionRepository {
   async findInstitutionRequstByEmail(
     email: string,
   ): Promise<InstitutionRegistrationRequstEntity | null> {
-    if (!email || email.trim().length === 0) return null;
+    if (!email || email.trim().length === 0) {
+      throw new AppError("Please enter a valid email", 400);
+    }
     const normalizedInstitutionRegistrationRequstEmail =
       email.toLocaleLowerCase();
 
     const findInstitutionRequstByEmailSQL = `
       SELECT * FROM institution_registration_request 
-      WHERE institution_email = ? AND deleted_at = null LIMIT 1
+      WHERE institution_email = ? AND deleted_at IS NULL LIMIT 1
     `;
 
     const [emails] = await dbPool.execute<RowDataPacket[]>(

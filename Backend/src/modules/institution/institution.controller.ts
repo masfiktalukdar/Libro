@@ -1,20 +1,55 @@
 import { Request, Response, NextFunction } from "express";
 import { institutionServices } from "@modules/institution/institution.services.js";
 import { institutionRepository } from "./institution.repository.js";
+import {
+  OTP_PURPOSE,
+  OTP_SUBJECTS,
+  otpService,
+} from "@/services/otpService.js";
+import { userSignUpOTPTemplate } from "@/templates/userSignUpOTP.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionController {
-  // Controller for institution request registration
+  // Controller for sent institution request registration OTP
+  async sentOTPForInstitutionRegistrationRequest(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      // Sending the otp
+      const { institution_email } = req.body;
+      await otpService.sendOTP(
+        institution_email,
+        OTP_SUBJECTS.registration_request,
+        OTP_PURPOSE.registration_request,
+        userSignUpOTPTemplate,
+      );
+
+      // sending the success response
+      res.status(201).json({
+        success: true,
+        message: `OTP has been sent to ${institution_email}. Please check your inbox`,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for verify institution request registration OTP
   async institutionRequestRegister(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
+      // Creating the registration request
       const institutionRequestResult =
         await institutionServices.createInstitutionRegistrationRequest(
           req.body,
         );
+
+      // sending the success response
       res.status(201).json({
         success: true,
         message:

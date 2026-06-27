@@ -21,7 +21,7 @@ const sanitize = (value: string) =>
 const cleanString = z.string().trim();
 
 // Schema for registration request
-export const institutionRegistrationSchema = z.object({
+export const institutionRegistrationRequestSchema = z.object({
   institution_name: cleanString
     .min(2, "Institution name must be at least 2 characters")
     .max(255)
@@ -47,7 +47,17 @@ export const institutionRegistrationSchema = z.object({
   institution_type: institutionTypeSchema,
 
   institution_logo_url: z.url("Invalid logo URL format").nullable().optional(),
+
+  otp: cleanString
+    .regex(/^\d+$/, "OTP number must contain only numeric digits")
+    .length(6, "OTP should be 6 characters"),
 });
+
+// Schema for registration request otp send
+export const institutionRegistrationOTP =
+  institutionRegistrationRequestSchema.omit({
+    otp: true,
+  });
 
 // Schema for creating actual institution
 export const institutionCreationSchema = z.object({
@@ -81,7 +91,7 @@ export const institutionCreationSchema = z.object({
 
 // exporting and infering the types
 export type InstitutionRegistrationInput = z.infer<
-  typeof institutionRegistrationSchema
+  typeof institutionRegistrationRequestSchema
 >;
 export type InstitutionCreationInput = z.infer<
   typeof institutionCreationSchema

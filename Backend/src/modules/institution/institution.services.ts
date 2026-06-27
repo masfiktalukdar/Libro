@@ -38,18 +38,21 @@ export class InstitutionServices {
     ];
     checkRequiredFields(requiredFields, payload);
 
-    const alredayAppliedInstitutions =
-      await institutionRepository.findInstitutionRequstByEmail(
-        payload.institution_email,
-      );
-    if (alredayAppliedInstitutions) {
-      throw new AppError(
-        "Registration request already has been sent with this email",
-        400,
-      );
-    }
     return await executeTransaction(async (trxConnection) => {
       try {
+        // check if the any user applied with the same email for institution registration
+        const alredayAppliedInstitutions =
+          await institutionRepository.findInstitutionRequstByEmail(
+            payload.institution_email,
+          );
+        if (alredayAppliedInstitutions) {
+          throw new AppError(
+            "Registration request already has been sent with this email",
+            400,
+          );
+        }
+
+        // generating request id
         const generatedInstitutionRequestId = crypto.randomUUID();
 
         const institutionRegistrationRequstEntity: InstitutionRegistrationRequstEntity =

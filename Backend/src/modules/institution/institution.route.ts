@@ -1,17 +1,28 @@
 import { Router } from "express";
 import { institutionController } from "@modules/institution/institution.controller.js";
 import { institutionMIddleware } from "@modules/institution/institution.middleware.js";
+import { verifyOTPMiddleware } from "@middlewares/verifyOTPMiddleware.js";
 import { inputValidator } from "@middlewares/inputValidator.js";
 import {
-  institutionRegistrationSchema,
+  institutionRegistrationRequestSchema,
+  institutionRegistrationOTP,
   institutionCreationSchema,
 } from "@modules/institution/institution.validator.js";
 
 const router = Router();
-// Creating Registration Request
+
+// Sending OTP for registration reqeust
 router.post(
-  "/instituion-registration-request",
-  inputValidator.validate(institutionRegistrationSchema),
+  "/sent-registration-request-otp",
+  inputValidator.validate(institutionRegistrationOTP),
+  institutionController.sentOTPForInstitutionRegistrationRequest,
+);
+
+// very OTP and creating Institution Registration Request
+router.post(
+  "/verify-registration-request-otp",
+  inputValidator.validate(institutionRegistrationRequestSchema),
+  verifyOTPMiddleware("institution_email"),
   institutionController.institutionRequestRegister,
 );
 

@@ -1,10 +1,17 @@
-import { Request, Response } from "express";
 import crypto from "crypto";
-import { executeTransaction, dbPool } from "@config/dbConnect.js";
+import { executeTransaction } from "@config/dbConnect.js";
 import { sendEmailUtility } from "@services/emailService.js";
-import { userSignUpOTPTemplate } from "@templates/userSignUpOTP.js";
 import { AppError } from "@utils/appError.js";
-import { RowDataPacket } from "mysql2";
+
+// OTP purpose is defined here
+export enum OTP_PURPOSE {
+  registration_request = "REGISTRATION_REQUEST",
+}
+
+// OTP subjects are defiend here
+export enum OTP_SUBJECTS {
+  registration_request = "Libro: Verify email for Institution Registration",
+}
 
 // Generate the otp
 function generateOTP(): string {
@@ -12,21 +19,23 @@ function generateOTP(): string {
   return num.toString();
 }
 
-class OTPHandler {
+class OTPService {
   // sending the OTP
-  async sendOTP(req: Request, res: Response): Promise<void> {
+  async sendOTP(
+    email: string,
+    emailSubject: string,
+    purpose: OTP_PURPOSE,
+    htmlTemplate: (otp: string) => string,
+  ): Promise<void> {
     try {
-      if (!req.body) {
-        throw new AppError("Please enter your email", 400);
-      }
-      const { email } = req.body;
-      if (!email || email === undefined) {
+      if (!email) {
         throw new AppError("Please enter your email", 400);
       }
 
+      // Generating otpId
       const otpId = crypto.randomUUID();
 
-      // otp is generating here
+      // actual OTP is generating here
       const otp = generateOTP();
 
       // otp expiery date is generating here
@@ -40,31 +49,27 @@ class OTPHandler {
 
       return executeTransaction(async (trxConnection) => {
         // delete all the otp that are releted to this
-        const deleteOTPSQL = `DELETE FROM user_otps WHERE email = ?`;
-        await trxConnection.execute(deleteOTPSQL, [email]);
+        const deleteOTPSQL = `DELETE FROM user_otps WHERE email = ? AND purpose = ?`;
+        await trxConnection.execute(deleteOTPSQL, [email, purpose]);
 
         // now insert the otp value in the table
-        const insertOTPSQL = `INSERT INTO user_otps (otp_id, email, otp, expires_at) VALUES (?,?,?,?)`;
+        const insertOTPSQL = `INSERT INTO user_otps (otp_id, email, otp, purpose, expires_at) VALUES (?,?,?,?,?)`;
         await trxConnection.execute(insertOTPSQL, [
           otpId,
           email,
           otp,
+          purpose,
           otpExpiery,
         ]);
 
         // HTML content
-        const emailHTMLContent = userSignUpOTPTemplate(otp);
+        const emailHTMLContent = htmlTemplate(otp);
 
         // email will be send from here
         await sendEmailUtility({
           email: email,
-          subject: "Your Libro Security Verification Code",
+          subject: emailSubject,
           html: emailHTMLContent,
-        });
-
-        res.status(201).json({
-          success: true,
-          message: `OTP has been send to ${email}. Please check your inbox`,
         });
       });
     } catch (err) {
@@ -74,36 +79,6 @@ class OTPHandler {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
-
-  // Verifying the OTP
-
-  async verifyOtp(req: Request, res: Response): Promise<Response | void> {
-    if (!req.body) {
-      throw new AppError("Please enter your otp", 400);
-    }
-    const { otp, email } = req.body;
-    if (!otp || !email) {
-      throw new AppError("Please enter your otp", 400);
-    }
-
-    const findOTPSQL = `SELECT * FROM user_otps WHERE email = ? AND otp = ? AND expires_at > NOW()`;
-    const [rows] = await dbPool.execute<RowDataPacket[]>(findOTPSQL, [
-      email,
-      otp,
-    ]);
-
-    if (!rows || rows.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Your given OTP is incorrect or expired",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "OTP verified successfully!",
-    });
-  }
 }
 
-export const otpHandler = new OTPHandler();
+export const otpService = new OTPService();
