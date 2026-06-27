@@ -85,7 +85,7 @@ export class InstitutionRepository {
     institutionRequestId: string,
     statusPayload: string,
     trx: PoolConnection,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<void> {
     try {
       const institutionRegistrationRequest =
         await this.findInstitutionRegistrationRequest(institutionRequestId);
@@ -97,16 +97,13 @@ export class InstitutionRepository {
       }
 
       const editInstitutionRegistrationSQL = `
-        UPDATE institution_registration_request SET registration_request_status = ?
+        UPDATE institution_registration_request SET registration_request_status = ? WHERE institution_request_id = ?
       `;
 
       await trx.execute<ResultSetHeader>(editInstitutionRegistrationSQL, [
         statusPayload,
+        institutionRequestId,
       ]);
-      return {
-        success: true,
-        message: `${institutionRegistrationRequest.institution_name} is ${institutionRegistrationRequest.registration_request_status}`,
-      };
     } catch (err) {
       if (err instanceof AppError) {
         throw err;
@@ -183,6 +180,8 @@ export class InstitutionRepository {
       throw new AppError(`Unexpected error accoured: ${err}`, 500);
     }
   }
+
+  //
 }
 
 export const institutionRepository = new InstitutionRepository();

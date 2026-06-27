@@ -93,11 +93,7 @@ export class InstitutionServices {
   async editRegistrationRequest(
     institutionRequestIdPayload: string,
     statusPayload: string,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    institutionRequestId: string;
-  }> {
+  ): Promise<void> {
     return await executeTransaction(async (trxConnection) => {
       try {
         await institutionRepository.editInstitutionRegistrationRequest(
@@ -105,11 +101,6 @@ export class InstitutionServices {
           statusPayload,
           trxConnection,
         );
-        return {
-          success: true,
-          message: `Institution request is changed to ${statusPayload} successfully`,
-          institutionRequestId: institutionRequestIdPayload,
-        };
       } catch (err) {
         if (err instanceof AppError) {
           throw err;

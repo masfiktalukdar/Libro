@@ -95,16 +95,14 @@ export class InstitutionController {
         throw new AppError("No request found by this id", 400);
       }
 
-      const institutionRequestEditResult =
-        await institutionServices.editRegistrationRequest(
-          institutionRequestId,
-          statusPayload,
-        );
+      await institutionServices.editRegistrationRequest(
+        institutionRequestId,
+        statusPayload,
+      );
 
       res.status(201).json({
         success: true,
         message: `Institution registration request changed to ${statusPayload} successfully`,
-        data: institutionRequestEditResult,
       });
     } catch (err) {
       next(err);

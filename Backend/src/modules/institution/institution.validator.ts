@@ -50,7 +50,8 @@ export const institutionRegistrationRequestSchema = z.object({
 
   otp: cleanString
     .regex(/^\d+$/, "OTP number must contain only numeric digits")
-    .length(6, "OTP should be 6 characters"),
+    .length(6, "OTP should be 6 characters")
+    .transform(sanitize),
 });
 
 // Schema for registration request otp send

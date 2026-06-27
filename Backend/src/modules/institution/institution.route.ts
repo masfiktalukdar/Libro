@@ -27,7 +27,7 @@ router.post(
 );
 
 // Editing Registration Request
-router.post(
+router.patch(
   "/edit-registration-request",
   institutionController.institutionRequestEdit,
 );
