@@ -20,6 +20,7 @@ app.use("/api/v1/institution", institutionRouter);
 
 // app.post("/api/v1/services/send-email", emailSender);
 app.post("/api/v1/services/send-otp", otpHandler.sendOTP);
+app.get("/api/v1/services/verify-otp", otpHandler.verifyOtp);
 
 // Global Erorr Handler
 app.use(globalErrorHandler);

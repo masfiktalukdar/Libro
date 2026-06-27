@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-import { executeTransaction } from "@config/dbConnect.js";
+import { executeTransaction, dbPool } from "@config/dbConnect.js";
 import { sendEmailUtility } from "@services/emailService.js";
 import { userSignUpOTPTemplate } from "@templates/userSignUpOTP.js";
 import { AppError } from "@utils/appError.js";
+import { RowDataPacket } from "mysql2";
 
 // Generate the otp
 function generateOTP(): string {
@@ -75,6 +76,34 @@ class OTPHandler {
   }
 
   // Verifying the OTP
+
+  async verifyOtp(req: Request, res: Response): Promise<Response | void> {
+    if (!req.body) {
+      throw new AppError("Please enter your otp", 400);
+    }
+    const { otp, email } = req.body;
+    if (!otp || !email) {
+      throw new AppError("Please enter your otp", 400);
+    }
+
+    const findOTPSQL = `SELECT * FROM user_otps WHERE email = ? AND otp = ? AND expires_at > NOW()`;
+    const [rows] = await dbPool.execute<RowDataPacket[]>(findOTPSQL, [
+      email,
+      otp,
+    ]);
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Your given OTP is incorrect or expired",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully!",
+    });
+  }
 }
 
 export const otpHandler = new OTPHandler();
