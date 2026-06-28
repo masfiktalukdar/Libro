@@ -181,7 +181,27 @@ export class InstitutionRepository {
     }
   }
 
-  // edit institution details except [institution_email & institution_password]
+  // Find institution by id
+  async findInstitutionById(
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<RowDataPacket[]> {
+    try {
+      const findInstitutionByIdSQL = `
+        SELECT * FROM institution WHERE institution_id = ?
+      `;
+
+      const [rows] = await trx.execute<RowDataPacket[]>(
+        findInstitutionByIdSQL,
+        [institution_id],
+      );
+      return rows;
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // edit institution name
   async updateInstitutionName(
     institution_name: string,
     institution_id: string,
@@ -190,7 +210,7 @@ export class InstitutionRepository {
   ): Promise<void> {
     try {
       const updateInstitutionNameSQL = `
-        UPDATE institution SET institution_name = ?, institution_slug = ? WHERE institution_id = ?
+        UPDATE institution SET institution_name = ?, institution_slug = ? WHERE institution_id = ? LIMIT 1
       `;
 
       await trx.execute<ResultSetHeader>(updateInstitutionNameSQL, [
@@ -200,6 +220,31 @@ export class InstitutionRepository {
       ]);
     } catch (err) {
       throw new AppError(`Unexpected DB error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Update institution fields
+  async updateInstitutionData(
+    institution_id: string,
+    updatedData: Partial<InstitutionEntity>,
+    trx: PoolConnection,
+  ) {
+    try {
+      const fields = Object.keys(updatedData) as (keyof InstitutionEntity)[];
+      if (!fields || fields.length === 0) {
+        throw new AppError("No fields found to update", 400);
+      }
+      const setClause = fields.map((field) => `${String(field)} = ?`).join(",");
+
+      const values = fields.map((field) => updatedData[field] ?? null);
+
+      const updateInstitutionDataSQL = `
+        UPDATE institution SET ${setClause} WHERE institution_id = ?
+      `;
+
+      await trx.execute(updateInstitutionDataSQL, [...values, institution_id]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
 }
