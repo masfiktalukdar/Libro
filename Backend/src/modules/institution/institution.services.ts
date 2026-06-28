@@ -12,7 +12,7 @@ import {
   InstitutionCreationInput,
 } from "@modules/institution/institution.validator.js";
 import checkRequiredFields from "@utils/checkRequiredFields.js";
-import { createUniqueSlugForInstitution } from "@utils/createUniqueSlug.js";
+import { createInstitutionSlug } from "@utils/createUniqueSlug.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionServices {
@@ -226,7 +226,7 @@ export class InstitutionServices {
         // Creating actual id for the institute
         const generatedInstitutionId = crypto.randomUUID();
         // Creating unique slug
-        const uniqueSlug = await createUniqueSlugForInstitution(
+        const uniqueSlug = await createInstitutionSlug(
           institution_name,
           generatedInstitutionId,
         );
@@ -299,8 +299,6 @@ export class InstitutionServices {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
-
-  // ! From here, institution edit work will begin
 }
 
 export const institutionServices = new InstitutionServices();

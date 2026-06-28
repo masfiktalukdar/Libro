@@ -181,7 +181,27 @@ export class InstitutionRepository {
     }
   }
 
-  //
+  // edit institution details except [institution_email & institution_password]
+  async updateInstitutionName(
+    institution_name: string,
+    institution_id: string,
+    instituion_slug: string,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const updateInstitutionNameSQL = `
+        UPDATE institution SET institution_name = ?, institution_slug = ? WHERE institution_id = ?
+      `;
+
+      await trx.execute<ResultSetHeader>(updateInstitutionNameSQL, [
+        institution_name,
+        instituion_slug,
+        institution_id,
+      ]);
+    } catch (err) {
+      throw new AppError(`Unexpected DB error occoured: ${err}`, 500);
+    }
+  }
 }
 
 export const institutionRepository = new InstitutionRepository();

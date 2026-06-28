@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { institutionServices } from "@modules/institution/institution.services.js";
+import { editInstitutionService } from "@modules/institution/editInstitution.services.js";
 import { institutionRepository } from "./institution.repository.js";
 import {
   OTP_PURPOSE,
@@ -172,6 +173,24 @@ export class InstitutionController {
         message:
           "Institution registration request has been created successfully",
         data: institutionResult,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for editing institution name
+  async editInstitutionName(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      await editInstitutionService.editInstitutionName(req.body);
+
+      res.status(200).json({
+        success: true,
+        message: "Institution name has been changed successfully",
       });
     } catch (err) {
       next(err);

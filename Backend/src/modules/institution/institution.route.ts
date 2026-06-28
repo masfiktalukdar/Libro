@@ -8,6 +8,7 @@ import {
   institutionRegistrationOTP,
   institutionCreationSchema,
 } from "@modules/institution/institution.validator.js";
+import z from "zod";
 
 const router = Router();
 
@@ -46,4 +47,14 @@ router.post(
   institutionController.newInstitutionCreation,
 );
 
+// edit Institution name
+router.patch(
+  "/edit-institution-name",
+  inputValidator.validate(
+    institutionCreationSchema
+      .pick({ institution_name: true })
+      .extend({ institution_id: z.uuid() }),
+  ),
+  institutionController.editInstitutionName,
+);
 export { router as institutionRouter };
