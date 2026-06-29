@@ -185,17 +185,17 @@ export class InstitutionRepository {
   async findInstitutionById(
     institution_id: string,
     trx: PoolConnection,
-  ): Promise<RowDataPacket[]> {
+  ): Promise<InstitutionEntity | null> {
     try {
       const findInstitutionByIdSQL = `
-        SELECT * FROM institution WHERE institution_id = ?
+        SELECT * FROM institution WHERE institution_id = ? LIMIT 1
       `;
 
       const [rows] = await trx.execute<RowDataPacket[]>(
         findInstitutionByIdSQL,
         [institution_id],
       );
-      return rows;
+      return rows[0] as InstitutionEntity;
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
