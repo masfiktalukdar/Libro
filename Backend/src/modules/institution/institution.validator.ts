@@ -5,6 +5,8 @@ export const institutionTypeSchema = z.enum(["university", "polytechnic"]);
 
 export const studentApprovalSystemSchema = z.enum(["manual", "automatic"]);
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
 export const membershipFeeTypeSchema = z.enum([
   "none",
   "per_month",
@@ -71,7 +73,14 @@ export const institutionCreationSchema = z.object({
 
   institution_logo_url: z.string().trim().pipe(z.url()).nullable(),
 
-  institution_password_text: z.string().min(20).max(255).nullable(),
+  institution_password_text: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .max(255, "Password is too long")
+    .regex(
+      passwordRegex,
+      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    ),
 
   student_approval_system: studentApprovalSystemSchema,
 
@@ -89,6 +98,12 @@ export const institutionCreationSchema = z.object({
 
   library_closing_time: z.iso.time(),
 });
+
+export const institutionSchema = institutionCreationSchema
+  .extend(institutionRegistrationRequestSchema.shape)
+  .extend({
+    institution_id: z.uuid(),
+  });
 
 // exporting and infering the types
 export type InstitutionRegistrationInput = z.infer<

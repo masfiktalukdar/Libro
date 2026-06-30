@@ -7,6 +7,7 @@ import {
   institutionRegistrationRequestSchema,
   institutionRegistrationOTP,
   institutionCreationSchema,
+  institutionSchema,
 } from "@modules/institution/institution.validator.js";
 import z from "zod";
 
@@ -56,5 +57,31 @@ router.patch(
       .extend({ institution_id: z.uuid() }),
   ),
   institutionController.editInstitutionName,
+);
+
+// edit institution general fields
+router.patch(
+  "/update-institution-fields",
+  inputValidator.validate(institutionSchema.partial()),
+  institutionController.updateInstitutionGeneralData,
+);
+
+// edit institution sensetive fields
+router.patch(
+  "/update-institution-sensitive-fields",
+  inputValidator.validate(
+    institutionSchema
+      .pick({
+        institution_id: true,
+        institution_password_text: true,
+        institution_email: true,
+      })
+      .extend({
+        new_password_plaintext:
+          institutionSchema.shape.institution_password_text,
+      })
+      .partial(),
+  ),
+  institutionController.updateInstitutionSensetiveData,
 );
 export { router as institutionRouter };

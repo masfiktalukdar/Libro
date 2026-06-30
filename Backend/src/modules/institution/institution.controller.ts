@@ -196,6 +196,45 @@ export class InstitutionController {
       next(err);
     }
   }
+
+  // Controller for updating general data of an instiution
+  async updateInstitutionGeneralData(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const institutionId = req.query.institution_id as string;
+      const updatedResult =
+        await editInstitutionService.editInstitutionGeneralFields(
+          institutionId,
+          req.body,
+        );
+
+      res.status(200).json(updatedResult);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for updating sensetive data of an instiution
+  async updateInstitutionSensetiveData(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const institutionId = req.query.institution_id as string;
+      const updatedResult =
+        await editInstitutionService.editInstitutionSensetiveFields(
+          institutionId,
+          req.body,
+        );
+      res.status(200).json(updatedResult);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const institutionController = new InstitutionController();

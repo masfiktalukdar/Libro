@@ -61,11 +61,15 @@ class EditInstitutionService {
   // Editing general fields of an institution
 
   async editInstitutionGeneralFields(
-    institutionId: string,
+    institution_id: string,
     payload: Partial<InstitutionEntity>,
-  ) {
+  ): Promise<{ success: boolean; message: string }> {
+    if (!institution_id) {
+      throw new AppError("Please provide institution_id", 400);
+    }
+
     if (!payload || Object.keys(payload).length === 0) {
-      throw new AppError("Please enter required fields", 500);
+      throw new AppError("Please enter required fields", 400);
     }
 
     const incomingFields = Object.keys(payload);
@@ -92,11 +96,25 @@ class EditInstitutionService {
     }
 
     return executeTransaction(async (trxConnection) => {
+      const institution = await institutionRepository.findInstitutionById(
+        institution_id,
+        trxConnection,
+      );
+
+      if (!institution || institution === null) {
+        throw new AppError("Institution not found", 404);
+      }
+
       await institutionRepository.updateInstitutionData(
-        institutionId,
+        institution_id,
         updatedData,
         trxConnection,
       );
+
+      return {
+        success: true,
+        message: `${incomingFields.join(",")} ${incomingFields.length > 1 ? "fields are" : "field is"} updated successfully`,
+      };
     });
   }
 
@@ -105,12 +123,19 @@ class EditInstitutionService {
   async editInstitutionSensetiveFields(
     institution_id: string,
     payload: {
-      new_email?: string;
+      institution_email?: string;
       new_password_plaintext?: string;
-      current_password_plaintext: string;
+      institution_password_text: string;
     },
-  ) {
-    if (!payload.current_password_plaintext) {
+  ): Promise<{ success: boolean; message: string }> {
+    if (!institution_id) {
+      throw new AppError("Please provide institution_id", 400);
+    }
+    if (!payload || Object.keys(payload).length === 0) {
+      throw new AppError("Please enter required fields", 400);
+    }
+
+    if (!payload.institution_password_text) {
       throw new AppError(
         "Current password is required to update sensetive data",
         401,
@@ -127,8 +152,8 @@ class EditInstitutionService {
         throw new AppError("Institution not found", 404);
       }
 
-      const isPasswordValid = bcrypt.compare(
-        payload.current_password_plaintext,
+      const isPasswordValid = await bcrypt.compare(
+        payload.institution_password_text,
         institution.institution_password_hashed,
       );
 
@@ -138,8 +163,8 @@ class EditInstitutionService {
 
       const updatedSensetiveData: Partial<InstitutionEntity> = {};
 
-      if (payload.new_email) {
-        updatedSensetiveData.institution_email = payload.new_email;
+      if (payload.institution_email) {
+        updatedSensetiveData.institution_email = payload.institution_email;
       }
 
       if (payload.new_password_plaintext) {
@@ -158,6 +183,11 @@ class EditInstitutionService {
         updatedSensetiveData,
         trxConnection,
       );
+
+      return {
+        success: true,
+        message: `${Object.keys(updatedSensetiveData).join(",")} ${Object.keys(updatedSensetiveData).length > 1 ? "fields are" : "field is"} updated successfully`,
+      };
     });
   }
 }
