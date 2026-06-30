@@ -8,6 +8,7 @@ import {
   institutionRegistrationOTP,
   institutionCreationSchema,
   institutionSchema,
+  institutionDepartmentSchema,
 } from "@modules/institution/institution.validator.js";
 import z from "zod";
 
@@ -84,4 +85,12 @@ router.patch(
   ),
   institutionController.updateInstitutionSensetiveData,
 );
+
+// Creating department for institution
+router.post(
+  "/create-institution-department",
+  inputValidator.validate(institutionDepartmentSchema.partial()),
+  institutionController.createInstitutionDepartment,
+);
+
 export { router as institutionRouter };

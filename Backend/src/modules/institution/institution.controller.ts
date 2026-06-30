@@ -235,6 +235,22 @@ export class InstitutionController {
       next(err);
     }
   }
+
+  // Controller for creating department for institution
+  async createInstitutionDepartment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await editInstitutionService.createInstitutionDepartment(
+        req.body,
+      );
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const institutionController = new InstitutionController();

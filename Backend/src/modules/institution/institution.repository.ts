@@ -5,6 +5,7 @@ import {
   InstitutionRegistrationRequstEntity,
   InstitutionEntity,
 } from "@modules/institution/institution.interface.js";
+import { DepartmentEntity } from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionRepository {
@@ -243,6 +244,27 @@ export class InstitutionRepository {
       `;
 
       await trx.execute(updateInstitutionDataSQL, [...values, institution_id]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Create department for institution
+  async createInstitutionDepartment(
+    payload: DepartmentEntity,
+    trx: PoolConnection,
+  ) {
+    try {
+      const createDepartmentSQL = `
+        INSERT INTO departments (department_id, institution_id, department_name) 
+        VALUES (?,?,?)
+      `;
+
+      await trx.execute(createDepartmentSQL, [
+        payload.department_id,
+        payload.institution_id,
+        payload.department_name,
+      ]);
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }

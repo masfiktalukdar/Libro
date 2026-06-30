@@ -2,8 +2,10 @@ import bcrypt from "bcrypt";
 import { executeTransaction } from "@config/dbConnect.js";
 import { institutionRepository } from "@modules/institution/institution.repository.js";
 import { InstitutionEntity } from "@modules/institution/institution.interface.js";
+import { DepartmentEntity } from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
 import { createInstitutionSlug } from "@/utils/createUniqueSlug.js";
+import checkRequiredFields from "@/utils/checkRequiredFields.js";
 
 // Identify the fields
 const PROFILE_FIELDS = [
@@ -58,7 +60,7 @@ class EditInstitutionService {
     }
   }
 
-  // Editing general fields of an institution
+  // * Editing general fields of an institution
 
   async editInstitutionGeneralFields(
     institution_id: string,
@@ -118,7 +120,7 @@ class EditInstitutionService {
     });
   }
 
-  // Edit sensetive fields of an institution
+  // * Edit sensetive fields of an institution
 
   async editInstitutionSensetiveFields(
     institution_id: string,
@@ -189,6 +191,53 @@ class EditInstitutionService {
         message: `${Object.keys(updatedSensetiveData).join(",")} ${Object.keys(updatedSensetiveData).length > 1 ? "fields are" : "field is"} updated successfully`,
       };
     });
+  }
+
+  // * Create new department for institution
+  async createInstitutionDepartment(
+    payload: Omit<DepartmentEntity, "department_id">,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!payload) {
+        throw new AppError("Please enter required fields", 400);
+      }
+
+      const requiredFields = ["institution_id", "department_name"];
+      checkRequiredFields(requiredFields, payload);
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          payload.institution_id,
+          trxConnection,
+        );
+
+        if (!institution || institution === null) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const departmentId = crypto.randomUUID();
+        const departmentEntity: DepartmentEntity = {
+          department_id: departmentId,
+          institution_id: payload.institution_id,
+          department_name: payload.department_name,
+        };
+
+        await institutionRepository.createInstitutionDepartment(
+          departmentEntity,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `${payload.department_name} has been created at ${institution.institution_name}`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
   }
 }
 

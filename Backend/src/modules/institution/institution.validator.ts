@@ -102,13 +102,26 @@ export const institutionCreationSchema = z.object({
 export const institutionSchema = institutionCreationSchema
   .extend(institutionRegistrationRequestSchema.shape)
   .extend({
+    department_id: z.uuid(),
     institution_id: z.uuid(),
   });
 
-// exporting and infering the types
+// Schema for institution department
+export const institutionDepartmentSchema = z.object({
+  department_id: z.uuid(),
+  institution_id: z.uuid(),
+  department_name: cleanString
+    .min(2, "Department name must be at least 2 characters long")
+    .max(255)
+    .transform(sanitize),
+});
+
+// * exporting and infering the types
 export type InstitutionRegistrationInput = z.infer<
   typeof institutionRegistrationRequestSchema
 >;
 export type InstitutionCreationInput = z.infer<
   typeof institutionCreationSchema
 >;
+
+export type DepartmentEntity = z.infer<typeof institutionDepartmentSchema>;
