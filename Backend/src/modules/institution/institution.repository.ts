@@ -269,6 +269,27 @@ export class InstitutionRepository {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
+
+  // * Delete department for institution
+
+  async deleteInstitutionDepartment(
+    department_id: string,
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const deleteInstitutionDepartmentSQL = `
+        DELETE FROM departments WHERE department_id = ? AND institution_id = ?
+      `;
+
+      await trx.execute(deleteInstitutionDepartmentSQL, [
+        department_id,
+        institution_id,
+      ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
 }
 
 export const institutionRepository = new InstitutionRepository();

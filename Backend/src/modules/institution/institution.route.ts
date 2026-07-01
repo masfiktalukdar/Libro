@@ -93,4 +93,10 @@ router.post(
   institutionController.createInstitutionDepartment,
 );
 
+// Deleting department for institution
+router.delete(
+  "/delete-institution-department",
+  institutionController.deleteInstitutionDepartment,
+);
+
 export { router as institutionRouter };

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { institutionServices } from "@modules/institution/institution.services.js";
 import { editInstitutionService } from "@modules/institution/editInstitution.services.js";
 import { institutionRepository } from "./institution.repository.js";
+import { institutionDepartmentSchema } from "./institution.validator.js";
 import {
   OTP_PURPOSE,
   OTP_SUBJECTS,
@@ -247,6 +248,29 @@ export class InstitutionController {
         req.body,
       );
       res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for delete department
+  async deleteInstitutionDepartment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { department_id, institution_id } =
+        await institutionDepartmentSchema
+          .pick({ department_id: true, institution_id: true })
+          .parseAsync(req.query);
+
+      const result = await editInstitutionService.deleteInstitutionDepartment(
+        department_id,
+        institution_id,
+      );
+
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }

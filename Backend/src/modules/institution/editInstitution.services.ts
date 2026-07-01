@@ -215,6 +215,16 @@ class EditInstitutionService {
           throw new AppError("Invalid institution", 404);
         }
 
+        const findDepartmentNameSQL = `SELECT * FROM departments WHERE department_name = ? LIMIT 1`;
+
+        const [result] = await trxConnection.execute(findDepartmentNameSQL, [
+          payload.department_name,
+        ]);
+        const isDepartmentNameExists = (result as DepartmentEntity[])[0];
+        if (isDepartmentNameExists) {
+          throw new AppError("Duplicate department name", 403);
+        }
+
         const departmentId = crypto.randomUUID();
         const departmentEntity: DepartmentEntity = {
           department_id: departmentId,
@@ -237,6 +247,57 @@ class EditInstitutionService {
         throw err;
       }
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Delete department for institution
+
+  async deleteInstitutionDepartment(
+    department_id: string,
+    institution_id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!department_id || !institution_id) {
+        throw new AppError("Please enter required fields", 400);
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        // Finding the department if exists
+        const findDepartmentSQL = `SELECT * FROM departments WHERE department_id = ? LIMIT 1`;
+
+        const [result] = await trxConnection.execute(findDepartmentSQL, [
+          department_id,
+        ]);
+        const department = (result as DepartmentEntity[])[0];
+        if (!department) {
+          throw new AppError("No department found to delete", 404);
+        }
+
+        // Finding the institution
+        const institution = await institutionRepository.findInstitutionById(
+          institution_id,
+          trxConnection,
+        );
+        if (!institution) {
+          throw new AppError("No institution found", 404);
+        }
+
+        await institutionRepository.deleteInstitutionDepartment(
+          department_id,
+          institution_id,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `"${department.department_name}" department has been deleted successfully`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured ${err}`, 500);
     }
   }
 }
