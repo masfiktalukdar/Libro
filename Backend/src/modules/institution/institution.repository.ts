@@ -5,7 +5,10 @@ import {
   InstitutionRegistrationRequstEntity,
   InstitutionEntity,
 } from "@modules/institution/institution.interface.js";
-import { DepartmentEntity } from "@modules/institution/institution.validator.js";
+import {
+  DepartmentEntity,
+  InstitutionShiftEntity,
+} from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionRepository {
@@ -286,6 +289,47 @@ export class InstitutionRepository {
         department_id,
         institution_id,
       ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Create shift for institution
+  async createInstitutionShift(
+    payload: InstitutionShiftEntity,
+    trx: PoolConnection,
+  ) {
+    try {
+      const createInstitutionShiftSQL = `
+        INSERT INTO shifts (shift_id, institution_id, shift_name, shift_start_time, shift_end_time) 
+        VALUES (?,?,?,?,?)
+      `;
+
+      await trx.execute(createInstitutionShiftSQL, [
+        payload.shift_id,
+        payload.institution_id,
+        payload.shift_name,
+        payload.shift_start_time,
+        payload.shift_end_time,
+      ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Delete department for institution
+
+  async deleteInstitutionShift(
+    shift_id: string,
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const deleteInstitutionShiftSQL = `
+        DELETE FROM shifts WHERE shift_id = ? AND institution_id = ?
+      `;
+
+      await trx.execute(deleteInstitutionShiftSQL, [shift_id, institution_id]);
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
