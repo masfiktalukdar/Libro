@@ -119,6 +119,8 @@ CREATE TABLE departments(
   FOREIGN KEY (institution_id) REFERENCES institution(institution_id) ON DELETE CASCADE,
 
   CONSTRAINT uq_institution_department UNIQUE (institution_id, department_name)
+
+  INDEX idx_department_name (department_name);
 );
 
 -- created "shifts" table for institute shift

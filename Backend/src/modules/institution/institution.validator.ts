@@ -116,6 +116,19 @@ export const institutionDepartmentSchema = z.object({
     .transform(sanitize),
 });
 
+// Schema for institution shift
+
+export const institutionShiftSchema = z.object({
+  shift_id: z.uuid(),
+  institution_id: z.uuid(),
+  shift_name: cleanString
+    .min(2, "Department name must be at least 2 characters long")
+    .max(100)
+    .transform(sanitize),
+  shift_start_time: z.iso.time(),
+  shift_end_time: z.iso.time(),
+});
+
 // * exporting and infering the types
 export type InstitutionRegistrationInput = z.infer<
   typeof institutionRegistrationRequestSchema
@@ -125,3 +138,5 @@ export type InstitutionCreationInput = z.infer<
 >;
 
 export type DepartmentEntity = z.infer<typeof institutionDepartmentSchema>;
+
+export type InstitutionShiftEntity = z.infer<typeof institutionShiftSchema>;
