@@ -2,7 +2,10 @@ import bcrypt from "bcrypt";
 import { executeTransaction } from "@config/dbConnect.js";
 import { institutionRepository } from "@modules/institution/institution.repository.js";
 import { InstitutionEntity } from "@modules/institution/institution.interface.js";
-import { DepartmentEntity } from "@modules/institution/institution.validator.js";
+import {
+  DepartmentEntity,
+  InstitutionShiftEntity,
+} from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
 import { createInstitutionSlug } from "@/utils/createUniqueSlug.js";
 import checkRequiredFields from "@/utils/checkRequiredFields.js";
@@ -215,14 +218,16 @@ class EditInstitutionService {
           throw new AppError("Invalid institution", 404);
         }
 
-        const findDepartmentNameSQL = `SELECT * FROM departments WHERE department_name = ? LIMIT 1`;
+        const findDepartmentNameSQL = `SELECT * FROM departments WHERE 
+        AND institution_id = ? department_name = ? LIMIT 1`;
 
         const [result] = await trxConnection.execute(findDepartmentNameSQL, [
+          payload.institution_id,
           payload.department_name,
         ]);
         const isDepartmentNameExists = (result as DepartmentEntity[])[0];
         if (isDepartmentNameExists) {
-          throw new AppError("Duplicate department name", 403);
+          throw new AppError("Duplicate department exists", 403);
         }
 
         const departmentId = crypto.randomUUID();
@@ -263,10 +268,12 @@ class EditInstitutionService {
 
       return executeTransaction(async (trxConnection) => {
         // Finding the department if exists
-        const findDepartmentSQL = `SELECT * FROM departments WHERE department_id = ? LIMIT 1`;
+        const findDepartmentSQL = `SELECT * FROM departments WHERE 
+        department_id = ? AND institution_id = ? LIMIT 1`;
 
         const [result] = await trxConnection.execute(findDepartmentSQL, [
           department_id,
+          institution_id,
         ]);
         const department = (result as DepartmentEntity[])[0];
         if (!department) {
@@ -298,6 +305,85 @@ class EditInstitutionService {
         throw err;
       }
       throw new AppError(`Unexpected error occoured ${err}`, 500);
+    }
+  }
+
+  // * Create new department for institution
+  async createInstitutionShift(
+    payload: Omit<InstitutionShiftEntity, "shift_id">,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!payload) {
+        throw new AppError("Please enter required fields", 400);
+      }
+
+      const requiredFields = [
+        "institution_id",
+        "shift_name",
+        "shift_start_time",
+        "shift_end_time",
+      ];
+      checkRequiredFields(requiredFields, payload);
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          payload.institution_id,
+          trxConnection,
+        );
+
+        if (!institution || institution === null) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const findInstitutionShiftSQL = `SELECT * FROM shifts
+        WHERE institution_id = ? AND (
+          shift_name = ?
+          OR (
+            ? < shift_end_time
+            AND ? > shift_start_time
+          )
+        ) LIMIT 1;`;
+
+        const [result] = await trxConnection.execute(findInstitutionShiftSQL, [
+          payload.institution_id,
+          payload.shift_name,
+          payload.shift_start_time,
+          payload.shift_end_time,
+        ]);
+        const isInstitutionShiftExists = (
+          result as InstitutionShiftEntity[]
+        )[0];
+        if (isInstitutionShiftExists) {
+          throw new AppError(
+            "Department overlap. Please put correct information",
+            403,
+          );
+        }
+
+        const shiftId = crypto.randomUUID();
+        const shiftEntity: InstitutionShiftEntity = {
+          shift_id: shiftId,
+          institution_id: payload.institution_id,
+          shift_name: payload.shift_name,
+          shift_start_time: payload.shift_start_time,
+          shift_end_time: payload.shift_end_time,
+        };
+
+        await institutionRepository.createInstitutionShift(
+          shiftEntity,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `${payload.shift_name} shift has been created at ${institution.institution_name}`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
 }
