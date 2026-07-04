@@ -395,7 +395,7 @@ class EditInstitutionService {
     }
   }
 
-  // * update new shift for institution
+  // * update shift for institution
 
   async updateInstitutionShift(
     shift_id: string,
@@ -492,6 +492,56 @@ class EditInstitutionService {
         return {
           success: true,
           message: `${payload.shift_name} shift has been updated successfully!`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * delete shift for institution
+
+  async deleteInstitutionShift(
+    shift_id: string,
+    institution_id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!shift_id || !institution_id) {
+        throw new AppError("Please enter required fields", 401);
+      }
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          institution_id,
+          trxConnection,
+        );
+
+        if (!institution || institution === null) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const institutionShift =
+          await institutionRepository.findInstitutionShift(
+            shift_id,
+            institution_id,
+            trxConnection,
+          );
+
+        if (!institutionShift) {
+          throw new AppError("No institution shift found", 404);
+        }
+
+        await institutionRepository.deleteInstitutionShift(
+          shift_id,
+          institution_id,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `${institutionShift.shift_name} shift has been deleted successfully!`,
         };
       });
     } catch (err) {
