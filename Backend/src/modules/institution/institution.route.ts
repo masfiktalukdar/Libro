@@ -9,6 +9,7 @@ import {
   institutionCreationSchema,
   institutionSchema,
   institutionDepartmentSchema,
+  institutionShiftSchema,
 } from "@modules/institution/institution.validator.js";
 import z from "zod";
 
@@ -97,6 +98,33 @@ router.post(
 router.delete(
   "/delete-institution-department",
   institutionController.deleteInstitutionDepartment,
+);
+
+// Create new Institution shift
+router.post(
+  "/create-institution-shift",
+  inputValidator.validate(institutionShiftSchema.partial()),
+  institutionController.createInstitutionShift,
+);
+
+// Update Institution shift
+
+router.patch(
+  "/update-institution-shift",
+  inputValidator.validate(
+    institutionShiftSchema.omit({
+      shift_id: true,
+      institution_id: true,
+    }),
+  ),
+  institutionController.updateInstitutionShift,
+);
+
+// Delete Institution shift
+
+router.delete(
+  "/delete-institution-shift",
+  institutionController.deleteInstitutionShift,
 );
 
 export { router as institutionRouter };

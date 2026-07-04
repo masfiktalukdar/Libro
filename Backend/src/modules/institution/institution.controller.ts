@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { institutionServices } from "@modules/institution/institution.services.js";
 import { editInstitutionService } from "@modules/institution/editInstitution.services.js";
 import { institutionRepository } from "./institution.repository.js";
-import { institutionDepartmentSchema } from "./institution.validator.js";
+import {
+  institutionDepartmentSchema,
+  institutionShiftSchema,
+} from "./institution.validator.js";
 import {
   OTP_PURPOSE,
   OTP_SUBJECTS,
@@ -267,6 +270,76 @@ export class InstitutionController {
 
       const result = await editInstitutionService.deleteInstitutionDepartment(
         department_id,
+        institution_id,
+      );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for creating new shift
+
+  async createInstitutionShift(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await editInstitutionService.createInstitutionShift(
+        req.body,
+      );
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for updating institution shift
+
+  async updateInstitutionShift(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id, shift_id } = await institutionShiftSchema
+        .pick({
+          shift_id: true,
+          institution_id: true,
+        })
+        .parseAsync(req.query);
+
+      const result = await editInstitutionService.updateInstitutionShift(
+        shift_id,
+        institution_id,
+        req.body,
+      );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for deleting shift
+
+  async deleteInstitutionShift(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id, shift_id } = await institutionShiftSchema
+        .pick({
+          shift_id: true,
+          institution_id: true,
+        })
+        .parseAsync(req.query);
+
+      const result = await editInstitutionService.deleteInstitutionShift(
+        shift_id,
         institution_id,
       );
 
