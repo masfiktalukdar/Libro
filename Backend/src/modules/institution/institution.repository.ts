@@ -317,12 +317,36 @@ export class InstitutionRepository {
     }
   }
 
-  // * Delete shift for institution
+  // * find shift for institution
+
+  async findInstitutionShift(
+    shift_id: string,
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<InstitutionShiftEntity> {
+    try {
+      const createInstitutionShiftSQL = `
+        SELECT * FROM shifts WHERE shift_id = ? AND institution_id = ? LIMIT 1
+      `;
+
+      const [result] = await trx.execute(createInstitutionShiftSQL, [
+        shift_id,
+        institution_id,
+      ]);
+      const institutionShift = (result as InstitutionShiftEntity[])[0];
+
+      return institutionShift;
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * update shift for institution
 
   async updateInstitutionShift(
     shift_id: string,
     institution_id: string,
-    payload: InstitutionShiftEntity,
+    payload: Omit<InstitutionShiftEntity, "shift_id" | "institution_id">,
     trx: PoolConnection,
   ): Promise<void> {
     try {

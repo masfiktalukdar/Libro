@@ -308,7 +308,7 @@ class EditInstitutionService {
     }
   }
 
-  // * Create new department for institution
+  // * Create new shift for institution
   async createInstitutionShift(
     payload: Omit<InstitutionShiftEntity, "shift_id">,
   ): Promise<{ success: boolean; message: string }> {
@@ -353,10 +353,18 @@ class EditInstitutionService {
         const isInstitutionShiftExists = (
           result as InstitutionShiftEntity[]
         )[0];
+
         if (isInstitutionShiftExists) {
           throw new AppError(
-            "Department overlap. Please put correct information",
+            "Institution shift overlap. Please put correct information",
             403,
+          );
+        }
+
+        if (payload.shift_end_time <= payload.shift_start_time) {
+          throw new AppError(
+            "Shift end time must be later than shift start time.",
+            400,
           );
         }
 
@@ -377,6 +385,113 @@ class EditInstitutionService {
         return {
           success: true,
           message: `${payload.shift_name} shift has been created at ${institution.institution_name}`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * update new shift for institution
+
+  async updateInstitutionShift(
+    shift_id: string,
+    institution_id: string,
+    payload: Omit<InstitutionShiftEntity, "shift_id" | "institution_id">,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!payload) {
+        throw new AppError("Please enter required fields", 400);
+      }
+
+      const requiredFields = [
+        "shift_name",
+        "shift_start_time",
+        "shift_end_time",
+      ];
+      checkRequiredFields(requiredFields, payload);
+
+      if (shift_id || !institution_id) {
+        throw new AppError("shift id and institution id is required", 401);
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          institution_id,
+          trxConnection,
+        );
+
+        if (!institution || institution === null) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const institutionShift =
+          await institutionRepository.findInstitutionShift(
+            shift_id,
+            institution_id,
+            trxConnection,
+          );
+
+        if (!institutionShift) {
+          throw new AppError("No shift found to edit", 404);
+        }
+
+        const findInstitutionShiftSQL = `SELECT * FROM shifts
+        WHERE shift_id = ? AND institution_id = ? AND (
+          shift_name = ?
+          OR (
+            ? < shift_end_time
+            AND ? > shift_start_time
+          )
+        ) LIMIT 1;`;
+
+        const [result] = await trxConnection.execute(findInstitutionShiftSQL, [
+          shift_id,
+          institution_id,
+          payload.shift_name,
+          payload.shift_start_time,
+          payload.shift_end_time,
+        ]);
+
+        const isInstitutionShiftOverlaps = (
+          result as InstitutionShiftEntity[]
+        )[0];
+        if (isInstitutionShiftOverlaps) {
+          throw new AppError(
+            "Institution shift overlap. Please put correct information",
+            403,
+          );
+        }
+
+        if (payload.shift_end_time <= payload.shift_start_time) {
+          throw new AppError(
+            "Shift end time must be later than shift start time.",
+            400,
+          );
+        }
+
+        const updatedShiftEntity: Omit<
+          InstitutionShiftEntity,
+          "shift_id" | "institution_id"
+        > = {
+          shift_name: payload.shift_name,
+          shift_start_time: payload.shift_start_time,
+          shift_end_time: payload.shift_end_time,
+        };
+
+        await institutionRepository.updateInstitutionShift(
+          shift_id,
+          institution_id,
+          updatedShiftEntity,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `${payload.shift_name} shift has been updated successfully!`,
         };
       });
     } catch (err) {
