@@ -129,6 +129,37 @@ export const institutionShiftSchema = z.object({
   shift_end_time: z.iso.time(),
 });
 
+// Schema for institution holidays
+
+export const institutionHolidaysSchema = z.object({
+  institution_holidays_id: z.uuid(),
+  institution_id: z.uuid(),
+  holiday_type: z.enum(["recurring", "manual"]),
+  holiday_value: cleanString
+    .max(50, "Holiday value must be under 50 charecters")
+    .transform(sanitize),
+});
+
+// Schema for file asset in institution
+
+export const fileAssetSchema = z.object({
+  asset_id: z.uuid(),
+  institution_id: z.uuid(),
+  file_url: z.url().max(1024),
+  file_type: z.enum(["pdf", "image"]),
+  asset_scope: z
+    .enum(["system_template", "tenant_private"])
+    .default("tenant_private"),
+});
+
+// Schema for automatic registration keyword in any instution
+
+export const automaticRegistrationKeywordSchema = z.object({
+  keyword_id: z.uuid(),
+  institution_id: z.uuid(),
+  keyword_value: cleanString.min(1).max(100).transform(sanitize),
+});
+
 // * exporting and infering the types
 export type InstitutionRegistrationInput = z.infer<
   typeof institutionRegistrationRequestSchema
@@ -140,3 +171,13 @@ export type InstitutionCreationInput = z.infer<
 export type DepartmentEntity = z.infer<typeof institutionDepartmentSchema>;
 
 export type InstitutionShiftEntity = z.infer<typeof institutionShiftSchema>;
+
+export type InstitutionHolidaysEntity = z.infer<
+  typeof institutionHolidaysSchema
+>;
+
+export type FileAssetEntithy = z.infer<typeof fileAssetSchema>;
+
+export type AutomaticRegistrationKeywordEntity = z.infer<
+  typeof automaticRegistrationKeywordSchema
+>;
