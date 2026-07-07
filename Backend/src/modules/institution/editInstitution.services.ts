@@ -3,6 +3,7 @@ import { executeTransaction } from "@config/dbConnect.js";
 import { institutionRepository } from "@modules/institution/institution.repository.js";
 import { InstitutionEntity } from "@modules/institution/institution.interface.js";
 import {
+  AutomaticRegistrationKeywordEntity,
   DepartmentEntity,
   FileAssetEntithy,
   InstitutionShiftEntity,
@@ -605,6 +606,8 @@ class EditInstitutionService {
     }
   }
 
+  // * Delete file for document example dispay
+
   async deleteInstitutionAssetExample(
     asset_id: string,
     institution_id: string,
@@ -637,6 +640,100 @@ class EditInstitutionService {
         return {
           success: true,
           message: "Selected docuemnt is deleted successfully",
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add Institution automatic registration keyword
+
+  async addAutomaticRegistrationKeyword(
+    payload: Omit<AutomaticRegistrationKeywordEntity, "keyword_id">,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!payload || Object.keys(payload).length === 0) {
+        throw new AppError("Please enter required fields", 401);
+      }
+
+      const requiredFields = ["institution_id", "keyword_value"];
+      checkRequiredFields(requiredFields, payload);
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          payload.institution_id,
+          trxConnection,
+        );
+
+        if (!institution || institution === null) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const keywordId = crypto.randomUUID();
+
+        const automaticRegistrationKeywordEntity: AutomaticRegistrationKeywordEntity =
+          {
+            keyword_id: keywordId,
+            institution_id: payload.institution_id,
+            keyword_value: payload.keyword_value,
+          };
+
+        await institutionRepository.addAutomaticRegistrationKeyword(
+          automaticRegistrationKeywordEntity,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `${payload.keyword_value} has successfully added to ${institution.institution_name}`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Remove Institution automatic registration keyword
+
+  async removeAutomaticRegistrationKeyword(
+    keyword_id: string,
+    institution_id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!keyword_id || !institution_id) {
+        throw new AppError("Please enter required fields", 401);
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        const findAutomaticRegistrationKeywordSQL = `
+          SELECT * FROM automatic_registration_keyword WHERE keyword_id = ? AND institution_id = ?
+        `;
+
+        const [result] = await trxConnection.execute(
+          findAutomaticRegistrationKeywordSQL,
+          [keyword_id, institution_id],
+        );
+
+        if (!result || result === null) {
+          throw new AppError("No keyword found to remove", 404);
+        }
+
+        await institutionRepository.removeAutomaticRegistrationKeyword(
+          keyword_id,
+          institution_id,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `Selected keyword deleted successfully`,
         };
       });
     } catch (err) {
