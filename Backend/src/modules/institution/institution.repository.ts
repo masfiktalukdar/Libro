@@ -7,6 +7,7 @@ import {
 } from "@modules/institution/institution.interface.js";
 import {
   DepartmentEntity,
+  FileAssetEntithy,
   InstitutionShiftEntity,
 } from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
@@ -379,6 +380,51 @@ export class InstitutionRepository {
       `;
 
       await trx.execute(deleteInstitutionShiftSQL, [shift_id, institution_id]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add file for document example dispay
+
+  async addInstitutionAssetExample(
+    payload: FileAssetEntithy,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const addInstitutionAssetExampleSQL = `
+        INSERT INTO file_assets (asset_id, institution_id, file_url, file_type, asset_scope) 
+        VALUES (?,?,?,?,?)
+      `;
+
+      await trx.execute(addInstitutionAssetExampleSQL, [
+        payload.asset_id,
+        payload.institution_id,
+        payload.file_url,
+        payload.file_type,
+        payload.asset_scope,
+      ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Delete file for document example dispay
+
+  async deleteInstitutionAssetExample(
+    asset_id: string,
+    instittuion_id: string,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const deleteInstitutionAssetExampleSQL = `
+        DELETE FROM file_assets WHERE asset_id = ? AND institution_id = ?
+      `;
+
+      await trx.execute(deleteInstitutionAssetExampleSQL, [
+        asset_id,
+        instittuion_id,
+      ]);
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
