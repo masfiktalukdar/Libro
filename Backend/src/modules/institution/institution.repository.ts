@@ -6,6 +6,7 @@ import {
   InstitutionEntity,
 } from "@modules/institution/institution.interface.js";
 import {
+  AutomaticRegistrationKeywordEntity,
   DepartmentEntity,
   FileAssetEntithy,
   InstitutionShiftEntity,
@@ -424,6 +425,50 @@ export class InstitutionRepository {
       await trx.execute(deleteInstitutionAssetExampleSQL, [
         asset_id,
         instittuion_id,
+      ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add institution automatic keyword
+
+  async addAutomaticRegistrationKeyword(
+    payload: AutomaticRegistrationKeywordEntity,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const addAutomaticRegistrationKeywordSQL = `
+        INSERT INTO automatic_registration_keyword (keyword_id, institution_id, keyword_value) 
+        VALUES (?,?,?)
+      `;
+
+      await trx.execute(addAutomaticRegistrationKeywordSQL, [
+        payload.keyword_id,
+        payload.institution_id,
+        payload.keyword_value,
+      ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Remove institution automatic keyword
+
+  async removeAutomaticRegistrationKeyword(
+    keyword_id: string,
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const removeAutomaticRegistrationKeywordSQL = `
+        DELETE FROM automatic_registration_keyword 
+        WHERE keyword_id = ? AND institution_id = ?
+      `;
+
+      await trx.execute(removeAutomaticRegistrationKeywordSQL, [
+        keyword_id,
+        institution_id,
       ]);
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
