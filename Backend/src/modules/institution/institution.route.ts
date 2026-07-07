@@ -10,6 +10,7 @@ import {
   institutionSchema,
   institutionDepartmentSchema,
   institutionShiftSchema,
+  fileAssetSchema,
 } from "@modules/institution/institution.validator.js";
 import z from "zod";
 
@@ -125,6 +126,21 @@ router.patch(
 router.delete(
   "/delete-institution-shift",
   institutionController.deleteInstitutionShift,
+);
+
+// Add institution document example
+
+router.post(
+  "/add-institution-document",
+  inputValidator.validate(fileAssetSchema.partial()),
+  institutionController.addInstitutionAssetExample,
+);
+
+// Delete institution document example
+
+router.delete(
+  "/delete-institution-document",
+  institutionController.deleteInstitutionAssetExample,
 );
 
 export { router as institutionRouter };

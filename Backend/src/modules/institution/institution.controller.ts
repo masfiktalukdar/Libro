@@ -3,6 +3,7 @@ import { institutionServices } from "@modules/institution/institution.services.j
 import { editInstitutionService } from "@modules/institution/editInstitution.services.js";
 import { institutionRepository } from "./institution.repository.js";
 import {
+  fileAssetSchema,
   institutionDepartmentSchema,
   institutionShiftSchema,
 } from "./institution.validator.js";
@@ -340,6 +341,49 @@ export class InstitutionController {
 
       const result = await editInstitutionService.deleteInstitutionShift(
         shift_id,
+        institution_id,
+      );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // controller for adding institution document example
+
+  async addInstitutionAssetExample(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await editInstitutionService.addInstitutionAssetExample(
+        req.body,
+      );
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // controller for deleting institution document example
+
+  async deleteInstitutionAssetExample(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { asset_id, institution_id } = await fileAssetSchema
+        .pick({
+          asset_id: true,
+          institution_id: true,
+        })
+        .parseAsync(req.query);
+
+      const result = editInstitutionService.deleteInstitutionAssetExample(
+        asset_id,
         institution_id,
       );
 
