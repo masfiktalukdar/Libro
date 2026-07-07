@@ -4,6 +4,7 @@ import { institutionRepository } from "@modules/institution/institution.reposito
 import { InstitutionEntity } from "@modules/institution/institution.interface.js";
 import {
   DepartmentEntity,
+  FileAssetEntithy,
   InstitutionShiftEntity,
 } from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
@@ -542,6 +543,58 @@ class EditInstitutionService {
         return {
           success: true,
           message: `${institutionShift.shift_name} shift has been deleted successfully!`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add file for document example dispay
+
+  async addInstitutionAssetExample(
+    payload: Omit<FileAssetEntithy, "asset_id">,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!payload || Object.keys(payload).length === 0) {
+        throw new AppError("Please enter required fields", 401);
+      }
+
+      const requiredFields = ["institution_id", "file_url", "file_type"];
+
+      checkRequiredFields(requiredFields, payload);
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          payload.institution_id,
+          trxConnection,
+        );
+
+        if (!institution || institution === null) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const assetId = crypto.randomUUID();
+
+        const addInstitutionAssetExampleEntity: FileAssetEntithy = {
+          asset_id: assetId,
+          institution_id: payload.institution_id,
+          file_type: payload.file_type,
+          asset_scope: "system_template",
+          file_url: payload.file_url,
+        };
+
+        await institutionRepository.addInstitutionAssetExample(
+          addInstitutionAssetExampleEntity,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `Document is successfully added to ${institution.institution_name}`,
         };
       });
     } catch (err) {
