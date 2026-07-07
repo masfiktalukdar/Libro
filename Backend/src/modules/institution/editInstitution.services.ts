@@ -604,6 +604,48 @@ class EditInstitutionService {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
+
+  async deleteInstitutionAssetExample(
+    asset_id: string,
+    institution_id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!asset_id || institution_id) {
+        throw new AppError("Please enter required fields", 401);
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        const assetFindSQL = `
+          SELECT * FROM file_assets WHERE asset_id = ? AND institution_id = ?
+        `;
+
+        const [result] = await trxConnection.execute(assetFindSQL, [
+          asset_id,
+          institution_id,
+        ]);
+
+        if (!result || result === null) {
+          throw new AppError("No document found to delete", 404);
+        }
+
+        await institutionRepository.deleteInstitutionAssetExample(
+          asset_id,
+          institution_id,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: "Selected docuemnt is deleted successfully",
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
 }
 
 export const editInstitutionService = new EditInstitutionService();
