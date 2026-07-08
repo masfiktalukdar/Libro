@@ -11,6 +11,7 @@ import {
   institutionDepartmentSchema,
   institutionShiftSchema,
   fileAssetSchema,
+  automaticRegistrationKeywordSchema,
 } from "@modules/institution/institution.validator.js";
 import z from "zod";
 
@@ -141,6 +142,21 @@ router.post(
 router.delete(
   "/delete-institution-document",
   institutionController.deleteInstitutionAssetExample,
+);
+
+// Add institution automatic registration keyword
+
+router.post(
+  "/add-automatic-registration-keyword",
+  inputValidator.validate(automaticRegistrationKeywordSchema.partial()),
+  institutionController.addAutomaticRegistrationKeyword,
+);
+
+// Delete institution document example
+
+router.delete(
+  "/remove-automatic-registration-keyword",
+  institutionController.removeAutomaticRegistrationKeyword,
 );
 
 export { router as institutionRouter };

@@ -3,6 +3,7 @@ import { institutionServices } from "@modules/institution/institution.services.j
 import { editInstitutionService } from "@modules/institution/editInstitution.services.js";
 import { institutionRepository } from "./institution.repository.js";
 import {
+  automaticRegistrationKeywordSchema,
   fileAssetSchema,
   institutionDepartmentSchema,
   institutionShiftSchema,
@@ -386,6 +387,49 @@ export class InstitutionController {
         asset_id,
         institution_id,
       );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for adding new automatic registration keyword
+
+  async addAutomaticRegistrationKeyword(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result =
+        await editInstitutionService.addAutomaticRegistrationKeyword(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for removing automatic registration keyword
+
+  async removeAutomaticRegistrationKeyword(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { keyword_id, institution_id } =
+        await automaticRegistrationKeywordSchema
+          .omit({
+            keyword_value: true,
+          })
+          .parseAsync(req.query);
+
+      const result =
+        await editInstitutionService.removeAutomaticRegistrationKeyword(
+          keyword_id,
+          institution_id,
+        );
 
       res.status(200).json(result);
     } catch (err) {
