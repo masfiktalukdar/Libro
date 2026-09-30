@@ -6,8 +6,6 @@ import { institutionRepository } from "@modules/institution/institution.reposito
 import {
   InstitutionEntity,
   InstitutionRegistrationRequstEntity,
-} from "@modules/institution/institution.interface.js";
-import {
   InstitutionRegistrationInput,
   InstitutionCreationInput,
 } from "@modules/institution/institution.validator.js";

@@ -1,11 +1,16 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { executeTransaction } from "@config/dbConnect.js";
 import { institutionRepository } from "@modules/institution/institution.repository.js";
-import { InstitutionEntity } from "@modules/institution/institution.interface.js";
 import {
+  AddManualHolidayInput,
+  AddRecurringHolidayInput,
   AutomaticRegistrationKeywordEntity,
   DepartmentEntity,
   FileAssetEntithy,
+  HolidayType,
+  InstitutionEntity,
+  InstitutionHolidayEntity,
   InstitutionShiftEntity,
 } from "@modules/institution/institution.validator.js";
 import { AppError } from "@/utils/appError.js";
@@ -221,7 +226,7 @@ class EditInstitutionService {
         }
 
         const findDepartmentNameSQL = `SELECT * FROM departments WHERE 
-        AND institution_id = ? department_name = ? LIMIT 1`;
+        institution_id = ? AND department_name = ? LIMIT 1`;
 
         const [result] = await trxConnection.execute(findDepartmentNameSQL, [
           payload.institution_id,
@@ -416,7 +421,7 @@ class EditInstitutionService {
       ];
       checkRequiredFields(requiredFields, payload);
 
-      if (shift_id || !institution_id) {
+      if (!shift_id || !institution_id) {
         throw new AppError("shift id and institution id is required", 401);
       }
 
@@ -613,7 +618,7 @@ class EditInstitutionService {
     institution_id: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      if (!asset_id || institution_id) {
+      if (!asset_id || !institution_id) {
         throw new AppError("Please enter required fields", 401);
       }
 
@@ -736,6 +741,314 @@ class EditInstitutionService {
           message: `Selected keyword deleted successfully`,
         };
       });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add recurring holiday(s) for institution (e.g. weekly closures like Friday, Saturday)
+  async addRecurringHoliday(
+    payload: AddRecurringHolidayInput,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    count: number;
+    addedHolidays: InstitutionHolidayEntity[];
+  }> {
+    try {
+      if (!payload || !payload.institution_id) {
+        throw new AppError("Institution ID is required", 400);
+      }
+
+      // Normalize incoming day/days
+      const rawDays = [
+        payload.day,
+        payload.day_of_week,
+        ...(payload.days || []),
+        ...(payload.days_of_week || []),
+      ].filter(Boolean) as string[];
+
+      // Unique lowercase day names
+      const targetDays = Array.from(
+        new Set(rawDays.map((d) => d.trim().toLowerCase())),
+      );
+
+      if (targetDays.length === 0) {
+        throw new AppError(
+          "Please provide at least one valid recurring weekday name",
+          400,
+        );
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          payload.institution_id,
+          trxConnection,
+        );
+
+        if (!institution) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        // Check which recurring days are already registered
+        const existing =
+          await institutionRepository.findExistingHolidaysByValues(
+            payload.institution_id,
+            "recurring",
+            targetDays,
+            trxConnection,
+          );
+        const existingDays = new Set(
+          existing.map((e) => e.holiday_value.toLowerCase()),
+        );
+
+        const daysToInsert = targetDays.filter((d) => !existingDays.has(d));
+
+        if (daysToInsert.length === 0) {
+          throw new AppError(
+            `The recurring holiday(s) [${targetDays.join(", ")}] are already registered for this institution`,
+            400,
+          );
+        }
+
+        const holidayEntities: InstitutionHolidayEntity[] = daysToInsert.map(
+          (day) => ({
+            institution_holidays_id: crypto.randomUUID(),
+            institution_id: payload.institution_id,
+            holiday_type: "recurring",
+            holiday_value: day,
+          }),
+        );
+
+        await institutionRepository.addInstitutionHolidaysBatch(
+          holidayEntities,
+          trxConnection,
+        );
+
+        const skippedMsg =
+          existingDays.size > 0
+            ? ` ([${Array.from(existingDays).join(", ")}] were already registered)`
+            : "";
+
+        return {
+          success: true,
+          message: `Recurring holiday(s) [${daysToInsert.join(", ")}] added successfully!${skippedMsg}`,
+          count: holidayEntities.length,
+          addedHolidays: holidayEntities,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add manual holiday for institution (single particular date or a date range from starting to ending date)
+  async addManualHoliday(
+    payload: AddManualHolidayInput,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    count: number;
+    addedHolidays: InstitutionHolidayEntity[];
+  }> {
+    try {
+      if (!payload || !payload.institution_id) {
+        throw new AppError("Institution ID is required", 400);
+      }
+
+      const startDate = payload.start_date || payload.date;
+      const endDate = payload.end_date || startDate;
+
+      if (!startDate || !endDate) {
+        throw new AppError(
+          "Please provide a valid date or date range in YYYY-MM-DD format",
+          400,
+        );
+      }
+
+      if (startDate > endDate) {
+        throw new AppError(
+          "start_date cannot be later than end_date",
+          400,
+        );
+      }
+
+      // Generate all dates in range [startDate, endDate] (timezone-safe using UTC)
+      const [sYear, sMonth, sDay] = startDate.split("-").map(Number);
+      const [eYear, eMonth, eDay] = endDate.split("-").map(Number);
+      const cur = new Date(Date.UTC(sYear, sMonth - 1, sDay));
+      const last = new Date(Date.UTC(eYear, eMonth - 1, eDay));
+
+      const diffTime = last.getTime() - cur.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      if (diffDays > 365) {
+        throw new AppError(
+          "Manual holiday date range cannot exceed 365 days per request",
+          400,
+        );
+      }
+
+      const datesInRange: string[] = [];
+      while (cur <= last) {
+        datesInRange.push(cur.toISOString().slice(0, 10));
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          payload.institution_id,
+          trxConnection,
+        );
+
+        if (!institution) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        // Check which dates already exist as manual holidays
+        const existing =
+          await institutionRepository.findExistingHolidaysByValues(
+            payload.institution_id,
+            "manual",
+            datesInRange,
+            trxConnection,
+          );
+        const existingDates = new Set(existing.map((e) => e.holiday_value));
+
+        const datesToInsert = datesInRange.filter((d) => !existingDates.has(d));
+
+        if (datesToInsert.length === 0) {
+          throw new AppError(
+            datesInRange.length === 1
+              ? `Date ${datesInRange[0]} is already registered as a holiday`
+              : "All dates in the specified range are already registered as holidays",
+            400,
+          );
+        }
+
+        const holidayEntities: InstitutionHolidayEntity[] = datesToInsert.map(
+          (date) => ({
+            institution_holidays_id: crypto.randomUUID(),
+            institution_id: payload.institution_id,
+            holiday_type: "manual",
+            holiday_value: date,
+          }),
+        );
+
+        await institutionRepository.addInstitutionHolidaysBatch(
+          holidayEntities,
+          trxConnection,
+        );
+
+        const skippedMsg =
+          existingDates.size > 0
+            ? ` (${existingDates.size} date(s) were already registered and skipped)`
+            : "";
+
+        return {
+          success: true,
+          message:
+            datesInRange.length === 1
+              ? `Holiday for ${datesToInsert[0]} added successfully!`
+              : `Successfully added ${datesToInsert.length} holiday day(s) from ${startDate} to ${endDate}!${skippedMsg}`,
+          count: holidayEntities.length,
+          addedHolidays: holidayEntities,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Delete holiday for institution
+  async deleteInstitutionHoliday(
+    holiday_id: string,
+    institution_id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!holiday_id || !institution_id) {
+        throw new AppError(
+          "institution_holidays_id and institution_id are required",
+          400,
+        );
+      }
+
+      return executeTransaction(async (trxConnection) => {
+        const institution = await institutionRepository.findInstitutionById(
+          institution_id,
+          trxConnection,
+        );
+
+        if (!institution) {
+          throw new AppError("Invalid institution", 404);
+        }
+
+        const holiday = await institutionRepository.findHolidayById(
+          holiday_id,
+          institution_id,
+          trxConnection,
+        );
+
+        if (!holiday) {
+          throw new AppError("No holiday found to delete", 404);
+        }
+
+        await institutionRepository.deleteInstitutionHoliday(
+          holiday_id,
+          institution_id,
+          trxConnection,
+        );
+
+        return {
+          success: true,
+          message: `Holiday (${holiday.holiday_type}: ${holiday.holiday_value}) has been deleted successfully!`,
+        };
+      });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Get all holidays for institution
+  async getInstitutionHolidays(
+    institution_id: string,
+    holiday_type?: HolidayType,
+  ): Promise<{
+    success: boolean;
+    data: InstitutionHolidayEntity[];
+  }> {
+    try {
+      if (!institution_id) {
+        throw new AppError("institution_id is required", 400);
+      }
+
+      const institution =
+        await institutionRepository.findInstitutionById(institution_id);
+
+      if (!institution) {
+        throw new AppError("Invalid institution", 404);
+      }
+
+      const holidays = await institutionRepository.getInstitutionHolidays(
+        institution_id,
+        holiday_type,
+      );
+
+      return {
+        success: true,
+        data: holidays,
+      };
     } catch (err) {
       if (err instanceof AppError) {
         throw err;

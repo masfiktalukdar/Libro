@@ -12,6 +12,8 @@ import {
   institutionShiftSchema,
   fileAssetSchema,
   automaticRegistrationKeywordSchema,
+  addRecurringHolidaySchema,
+  addManualHolidaySchema,
 } from "@modules/institution/institution.validator.js";
 import z from "zod";
 
@@ -152,11 +154,37 @@ router.post(
   institutionController.addAutomaticRegistrationKeyword,
 );
 
-// Delete institution document example
+// Delete institution automatic registration keyword
 
 router.delete(
   "/remove-automatic-registration-keyword",
   institutionController.removeAutomaticRegistrationKeyword,
+);
+
+// Add recurring holiday (e.g. weekly closures like Friday, Saturday)
+router.post(
+  "/add-recurring-holiday",
+  inputValidator.validate(addRecurringHolidaySchema),
+  institutionController.addRecurringHoliday,
+);
+
+// Add manual holiday (single specific date or date range)
+router.post(
+  "/add-manual-holiday",
+  inputValidator.validate(addManualHolidaySchema),
+  institutionController.addManualHoliday,
+);
+
+// Delete institution holiday
+router.delete(
+  "/delete-institution-holiday",
+  institutionController.deleteInstitutionHoliday,
+);
+
+// Get institution holidays
+router.get(
+  "/get-institution-holidays",
+  institutionController.getInstitutionHolidays,
 );
 
 export { router as institutionRouter };

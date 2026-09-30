@@ -7,6 +7,8 @@ import {
   fileAssetSchema,
   institutionDepartmentSchema,
   institutionShiftSchema,
+  deleteInstitutionHolidaySchema,
+  getInstitutionHolidaysQuerySchema,
 } from "./institution.validator.js";
 import {
   OTP_PURPOSE,
@@ -430,6 +432,76 @@ export class InstitutionController {
           keyword_id,
           institution_id,
         );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for adding recurring holiday
+  async addRecurringHoliday(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await editInstitutionService.addRecurringHoliday(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for adding manual holiday (single date or range)
+  async addManualHoliday(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await editInstitutionService.addManualHoliday(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for deleting holiday
+  async deleteInstitutionHoliday(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id, institution_holidays_id } =
+        await deleteInstitutionHolidaySchema.parseAsync(req.query);
+
+      const result = await editInstitutionService.deleteInstitutionHoliday(
+        institution_holidays_id,
+        institution_id,
+      );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for getting all holidays for an institution
+  async getInstitutionHolidays(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id, holiday_type } =
+        await getInstitutionHolidaysQuerySchema.parseAsync(req.query);
+
+      const result = await editInstitutionService.getInstitutionHolidays(
+        institution_id,
+        holiday_type,
+      );
 
       res.status(200).json(result);
     } catch (err) {

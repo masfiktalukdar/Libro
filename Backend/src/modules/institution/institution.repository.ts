@@ -4,8 +4,9 @@ import { ResultSetHeader, RowDataPacket } from "mysql2";
 import {
   InstitutionRegistrationRequstEntity,
   InstitutionEntity,
-} from "@modules/institution/institution.interface.js";
-import {
+  HolidayType,
+  InstitutionHolidaysEntity,
+  InstitutionHolidayEntity,
   AutomaticRegistrationKeywordEntity,
   DepartmentEntity,
   FileAssetEntithy,
@@ -190,18 +191,19 @@ export class InstitutionRepository {
   // Find institution by id
   async findInstitutionById(
     institution_id: string,
-    trx: PoolConnection,
+    trx?: PoolConnection,
   ): Promise<InstitutionEntity | null> {
     try {
       const findInstitutionByIdSQL = `
         SELECT * FROM institution WHERE institution_id = ? LIMIT 1
       `;
 
-      const [rows] = await trx.execute<RowDataPacket[]>(
+      const connection = trx || dbPool;
+      const [rows] = await connection.execute<RowDataPacket[]>(
         findInstitutionByIdSQL,
         [institution_id],
       );
-      return rows[0] as InstitutionEntity;
+      return (rows[0] as InstitutionEntity) || null;
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
@@ -470,6 +472,129 @@ export class InstitutionRepository {
         keyword_id,
         institution_id,
       ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Find holiday by id
+  async findHolidayById(
+    holiday_id: string,
+    institution_id: string,
+    trx?: PoolConnection,
+  ): Promise<InstitutionHolidayEntity | null> {
+    try {
+      const sql = `
+        SELECT * FROM institution_holidays 
+        WHERE institution_holidays_id = ? AND institution_id = ? LIMIT 1
+      `;
+      const connection = trx || dbPool;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        holiday_id,
+        institution_id,
+      ]);
+      return (rows[0] as InstitutionHolidayEntity) || null;
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Find existing holidays by value list
+  async findExistingHolidaysByValues(
+    institution_id: string,
+    holiday_type: HolidayType,
+    values: string[],
+    trx?: PoolConnection,
+  ): Promise<InstitutionHolidayEntity[]> {
+    try {
+      if (values.length === 0) return [];
+      const placeholders = values.map(() => "?").join(", ");
+      const sql = `
+        SELECT * FROM institution_holidays 
+        WHERE institution_id = ? AND holiday_type = ? AND holiday_value IN (${placeholders})
+      `;
+      const connection = trx || dbPool;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        institution_id,
+        holiday_type,
+        ...values,
+      ]);
+      return rows as InstitutionHolidayEntity[];
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Batch add institution holidays
+  async addInstitutionHolidaysBatch(
+    holidays: InstitutionHolidayEntity[],
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      if (holidays.length === 0) return;
+      const placeholders = holidays.map(() => "(?, ?, ?, ?)").join(", ");
+      const params = holidays.flatMap((h) => [
+        h.institution_holidays_id,
+        h.institution_id,
+        h.holiday_type,
+        h.holiday_value,
+      ]);
+      const sql = `
+        INSERT INTO institution_holidays (institution_holidays_id, institution_id, holiday_type, holiday_value)
+        VALUES ${placeholders}
+      `;
+      await trx.execute(sql, params);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Delete holiday for institution
+  async deleteInstitutionHoliday(
+    holiday_id: string,
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<void> {
+    try {
+      const sql = `
+        DELETE FROM institution_holidays 
+        WHERE institution_holidays_id = ? AND institution_id = ?
+      `;
+      await trx.execute(sql, [holiday_id, institution_id]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Get all holidays for institution
+  async getInstitutionHolidays(
+    institution_id: string,
+    holiday_type?: HolidayType,
+    trx?: PoolConnection,
+  ): Promise<InstitutionHolidayEntity[]> {
+    try {
+      const connection = trx || dbPool;
+      if (holiday_type) {
+        const sql = `
+          SELECT * FROM institution_holidays 
+          WHERE institution_id = ? AND holiday_type = ?
+          ORDER BY holiday_value ASC
+        `;
+        const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+          institution_id,
+          holiday_type,
+        ]);
+        return rows as InstitutionHolidayEntity[];
+      }
+      const sql = `
+        SELECT * FROM institution_holidays 
+        WHERE institution_id = ? 
+        ORDER BY holiday_type ASC, holiday_value ASC
+      `;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        institution_id,
+      ]);
+      return rows as InstitutionHolidayEntity[];
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
