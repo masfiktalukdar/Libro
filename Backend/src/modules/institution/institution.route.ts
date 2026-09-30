@@ -19,14 +19,16 @@ import z from "zod";
 
 const router = Router();
 
-// Sending OTP for registration reqeust
+// Section 1: Onboarding & Registration Requests
+
+// Sending OTP for registration request
 router.post(
   "/sent-registration-request-otp",
   inputValidator.validate(institutionRegistrationOTP),
   institutionController.sentOTPForInstitutionRegistrationRequest,
 );
 
-// very OTP and creating Institution Registration Request
+// Verify OTP and creating Institution Registration Request
 router.post(
   "/verify-registration-request-otp",
   inputValidator.validate(institutionRegistrationRequestSchema),
@@ -37,13 +39,22 @@ router.post(
 // Editing Registration Request
 router.patch(
   "/edit-registration-request",
+  institutionMIddleware.verifyAuthToken,
   institutionController.institutionRequestEdit,
 );
 
 // Sending institution creation link
 router.post(
   "/sent-institution-creation-link",
+  institutionMIddleware.verifyAuthToken,
   institutionController.institutionCreationInvitation,
+);
+
+// Get institution registration requests
+router.get(
+  "/get-registration-requests",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getRegistrationRequests,
 );
 
 // Creating a new institution
@@ -54,9 +65,19 @@ router.post(
   institutionController.newInstitutionCreation,
 );
 
-// edit Institution name
+// Section 2: Institution Profile & Settings
+
+// Get institution details
+router.get(
+  "/get-institution-details",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getInstitutionDetails,
+);
+
+// Edit Institution name
 router.patch(
   "/edit-institution-name",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(
     institutionCreationSchema
       .pick({ institution_name: true })
@@ -65,16 +86,18 @@ router.patch(
   institutionController.editInstitutionName,
 );
 
-// edit institution general fields
+// Edit institution general fields
 router.patch(
   "/update-institution-fields",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(institutionSchema.partial()),
   institutionController.updateInstitutionGeneralData,
 );
 
-// edit institution sensetive fields
+// Edit institution sensitive fields
 router.patch(
   "/update-institution-sensitive-fields",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(
     institutionSchema
       .pick({
@@ -91,9 +114,19 @@ router.patch(
   institutionController.updateInstitutionSensetiveData,
 );
 
+// Section 3: Academic Departments
+
+// Get departments for institution
+router.get(
+  "/get-institution-departments",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getInstitutionDepartments,
+);
+
 // Creating department for institution
 router.post(
   "/create-institution-department",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(institutionDepartmentSchema.partial()),
   institutionController.createInstitutionDepartment,
 );
@@ -101,20 +134,31 @@ router.post(
 // Deleting department for institution
 router.delete(
   "/delete-institution-department",
+  institutionMIddleware.verifyAuthToken,
   institutionController.deleteInstitutionDepartment,
+);
+
+// Section 4: Academic Shifts
+
+// Get shifts for institution
+router.get(
+  "/get-institution-shifts",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getInstitutionShifts,
 );
 
 // Create new Institution shift
 router.post(
   "/create-institution-shift",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(institutionShiftSchema.partial()),
   institutionController.createInstitutionShift,
 );
 
 // Update Institution shift
-
 router.patch(
   "/update-institution-shift",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(
     institutionShiftSchema.omit({
       shift_id: true,
@@ -125,45 +169,73 @@ router.patch(
 );
 
 // Delete Institution shift
-
 router.delete(
   "/delete-institution-shift",
+  institutionMIddleware.verifyAuthToken,
   institutionController.deleteInstitutionShift,
 );
 
-// Add institution document example
+// Section 5: Document Assets & Verification Examples
 
+// Get institution document assets
+router.get(
+  "/get-institution-documents",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getInstitutionDocuments,
+);
+
+// Add institution document example
 router.post(
   "/add-institution-document",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(fileAssetSchema.partial()),
   institutionController.addInstitutionAssetExample,
 );
 
 // Delete institution document example
-
 router.delete(
   "/delete-institution-document",
+  institutionMIddleware.verifyAuthToken,
   institutionController.deleteInstitutionAssetExample,
 );
 
-// Add institution automatic registration keyword
+// Section 6: Registration Automation Keywords
 
+// Get automatic registration keywords
+router.get(
+  "/get-automatic-registration-keywords",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getAutomaticRegistrationKeywords,
+);
+
+// Add institution automatic registration keyword
 router.post(
   "/add-automatic-registration-keyword",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(automaticRegistrationKeywordSchema.partial()),
   institutionController.addAutomaticRegistrationKeyword,
 );
 
 // Delete institution automatic registration keyword
-
 router.delete(
   "/remove-automatic-registration-keyword",
+  institutionMIddleware.verifyAuthToken,
   institutionController.removeAutomaticRegistrationKeyword,
+);
+
+// Section 7: Holidays & Calendar
+
+// Get institution holidays
+router.get(
+  "/get-institution-holidays",
+  institutionMIddleware.verifyAuthToken,
+  institutionController.getInstitutionHolidays,
 );
 
 // Add recurring holiday (e.g. weekly closures like Friday, Saturday)
 router.post(
   "/add-recurring-holiday",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(addRecurringHolidaySchema),
   institutionController.addRecurringHoliday,
 );
@@ -171,6 +243,7 @@ router.post(
 // Add manual holiday (single specific date or date range)
 router.post(
   "/add-manual-holiday",
+  institutionMIddleware.verifyAuthToken,
   inputValidator.validate(addManualHolidaySchema),
   institutionController.addManualHoliday,
 );
@@ -178,13 +251,8 @@ router.post(
 // Delete institution holiday
 router.delete(
   "/delete-institution-holiday",
+  institutionMIddleware.verifyAuthToken,
   institutionController.deleteInstitutionHoliday,
-);
-
-// Get institution holidays
-router.get(
-  "/get-institution-holidays",
-  institutionController.getInstitutionHolidays,
 );
 
 export { router as institutionRouter };

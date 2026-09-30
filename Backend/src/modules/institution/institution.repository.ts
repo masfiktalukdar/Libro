@@ -3,9 +3,9 @@ import { PoolConnection } from "mysql2/promise";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import {
   InstitutionRegistrationRequstEntity,
+  InstitutionRegistrationRequestStatus,
   InstitutionEntity,
   HolidayType,
-  InstitutionHolidaysEntity,
   InstitutionHolidayEntity,
   AutomaticRegistrationKeywordEntity,
   DepartmentEntity,
@@ -15,6 +15,8 @@ import {
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionRepository {
+  // Section 1: Onboarding & Registration Requests
+
   // Find institution request by it's email
   async findInstitutionRequstByEmail(
     email: string,
@@ -119,6 +121,42 @@ export class InstitutionRepository {
     }
   }
 
+  // * Get registration requests with optional status or ID filtering
+  async getRegistrationRequests(
+    status?: InstitutionRegistrationRequestStatus,
+    institution_request_id?: string,
+    trx?: PoolConnection,
+  ): Promise<InstitutionRegistrationRequstEntity[]> {
+    try {
+      const connection = trx || dbPool;
+      let sql = `
+        SELECT institution_request_id, institution_name, institution_logo_url, institution_email,
+               institution_founding_year, institution_eiin_number, institution_location,
+               institution_type, registration_request_status, created_at, updated_at
+        FROM institution_registration_request
+        WHERE deleted_at IS NULL
+      `;
+      const params: (string | number | boolean | null)[] = [];
+
+      if (institution_request_id) {
+        sql += ` AND institution_request_id = ?`;
+        params.push(institution_request_id);
+      }
+
+      if (status) {
+        sql += ` AND registration_request_status = ?`;
+        params.push(status);
+      }
+
+      sql += ` ORDER BY created_at DESC`;
+
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, params);
+      return rows as InstitutionRegistrationRequstEntity[];
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
   // find the existing institution with email and eiin number
   async isInstitutionExists(
     institutionEmail: string,
@@ -188,6 +226,8 @@ export class InstitutionRepository {
     }
   }
 
+  // Section 2: Institution Profile & Settings
+
   // Find institution by id
   async findInstitutionById(
     institution_id: string,
@@ -202,6 +242,26 @@ export class InstitutionRepository {
       const [rows] = await connection.execute<RowDataPacket[]>(
         findInstitutionByIdSQL,
         [institution_id],
+      );
+      return (rows[0] as InstitutionEntity) || null;
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Find institution by slug
+  async findInstitutionBySlug(
+    institution_slug: string,
+    trx?: PoolConnection,
+  ): Promise<InstitutionEntity | null> {
+    try {
+      const findInstitutionBySlugSQL = `
+        SELECT * FROM institution WHERE institution_slug = ? LIMIT 1
+      `;
+      const connection = trx || dbPool;
+      const [rows] = await connection.execute<RowDataPacket[]>(
+        findInstitutionBySlugSQL,
+        [institution_slug],
       );
       return (rows[0] as InstitutionEntity) || null;
     } catch (err) {
@@ -256,6 +316,30 @@ export class InstitutionRepository {
     }
   }
 
+  // Section 3: Academic Departments
+
+  // * Get all departments for an institution
+  async getInstitutionDepartments(
+    institution_id: string,
+    trx?: PoolConnection,
+  ): Promise<DepartmentEntity[]> {
+    try {
+      const connection = trx || dbPool;
+      const sql = `
+        SELECT department_id, institution_id, department_name, created_at, updated_at
+        FROM departments
+        WHERE institution_id = ?
+        ORDER BY department_name ASC
+      `;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        institution_id,
+      ]);
+      return rows as DepartmentEntity[];
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
   // * Create department for institution
   async createInstitutionDepartment(
     payload: DepartmentEntity,
@@ -278,7 +362,6 @@ export class InstitutionRepository {
   }
 
   // * Delete department for institution
-
   async deleteInstitutionDepartment(
     department_id: string,
     institution_id: string,
@@ -293,6 +376,53 @@ export class InstitutionRepository {
         department_id,
         institution_id,
       ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // Section 4: Academic Shifts
+
+  // * Get all shifts for an institution
+  async getInstitutionShifts(
+    institution_id: string,
+    trx?: PoolConnection,
+  ): Promise<InstitutionShiftEntity[]> {
+    try {
+      const connection = trx || dbPool;
+      const sql = `
+        SELECT shift_id, institution_id, shift_name, shift_start_time, shift_end_time, created_at, updated_at
+        FROM shifts
+        WHERE institution_id = ?
+        ORDER BY shift_start_time ASC
+      `;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        institution_id,
+      ]);
+      return rows as InstitutionShiftEntity[];
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * find shift for institution
+  async findInstitutionShift(
+    shift_id: string,
+    institution_id: string,
+    trx: PoolConnection,
+  ): Promise<InstitutionShiftEntity> {
+    try {
+      const findInstitutionShiftSQL = `
+        SELECT * FROM shifts WHERE shift_id = ? AND institution_id = ? LIMIT 1
+      `;
+
+      const [result] = await trx.execute(findInstitutionShiftSQL, [
+        shift_id,
+        institution_id,
+      ]);
+      const institutionShift = (result as InstitutionShiftEntity[])[0];
+
+      return institutionShift;
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
@@ -321,32 +451,7 @@ export class InstitutionRepository {
     }
   }
 
-  // * find shift for institution
-
-  async findInstitutionShift(
-    shift_id: string,
-    institution_id: string,
-    trx: PoolConnection,
-  ): Promise<InstitutionShiftEntity> {
-    try {
-      const createInstitutionShiftSQL = `
-        SELECT * FROM shifts WHERE shift_id = ? AND institution_id = ? LIMIT 1
-      `;
-
-      const [result] = await trx.execute(createInstitutionShiftSQL, [
-        shift_id,
-        institution_id,
-      ]);
-      const institutionShift = (result as InstitutionShiftEntity[])[0];
-
-      return institutionShift;
-    } catch (err) {
-      throw new AppError(`Unexpected error occoured: ${err}`, 500);
-    }
-  }
-
   // * update shift for institution
-
   async updateInstitutionShift(
     shift_id: string,
     institution_id: string,
@@ -371,7 +476,6 @@ export class InstitutionRepository {
   }
 
   // * Delete shift for institution
-
   async deleteInstitutionShift(
     shift_id: string,
     institution_id: string,
@@ -388,8 +492,53 @@ export class InstitutionRepository {
     }
   }
 
-  // * Add file for document example dispay
+  // Section 5: Document Assets & Verification Examples
 
+  // * Get document assets for an institution (including system templates)
+  async getInstitutionDocuments(
+    institution_id: string,
+    asset_scope?: "system_template" | "tenant_private",
+    trx?: PoolConnection,
+  ): Promise<FileAssetEntithy[]> {
+    try {
+      const connection = trx || dbPool;
+      let sql: string;
+      let params: (string | number | boolean | null)[];
+
+      if (asset_scope === "tenant_private") {
+        sql = `
+          SELECT asset_id, institution_id, file_url, file_type, asset_scope, created_at
+          FROM file_assets
+          WHERE institution_id = ? AND asset_scope = 'tenant_private'
+          ORDER BY created_at DESC
+        `;
+        params = [institution_id];
+      } else if (asset_scope === "system_template") {
+        sql = `
+          SELECT asset_id, institution_id, file_url, file_type, asset_scope, created_at
+          FROM file_assets
+          WHERE asset_scope = 'system_template'
+          ORDER BY created_at DESC
+        `;
+        params = [];
+      } else {
+        sql = `
+          SELECT asset_id, institution_id, file_url, file_type, asset_scope, created_at
+          FROM file_assets
+          WHERE institution_id = ? OR asset_scope = 'system_template'
+          ORDER BY created_at DESC
+        `;
+        params = [institution_id];
+      }
+
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, params);
+      return rows as FileAssetEntithy[];
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add file for document example dispay
   async addInstitutionAssetExample(
     payload: FileAssetEntithy,
     trx: PoolConnection,
@@ -413,7 +562,6 @@ export class InstitutionRepository {
   }
 
   // * Delete file for document example dispay
-
   async deleteInstitutionAssetExample(
     asset_id: string,
     instittuion_id: string,
@@ -433,8 +581,31 @@ export class InstitutionRepository {
     }
   }
 
-  // * Add institution automatic keyword
+  // Section 6: Registration Automation Keywords
 
+  // * Get automatic registration keywords for an institution
+  async getAutomaticRegistrationKeywords(
+    institution_id: string,
+    trx?: PoolConnection,
+  ): Promise<AutomaticRegistrationKeywordEntity[]> {
+    try {
+      const connection = trx || dbPool;
+      const sql = `
+        SELECT keyword_id, institution_id, keyword_value, created_at, updated_at
+        FROM automatic_registration_keyword
+        WHERE institution_id = ?
+        ORDER BY created_at DESC
+      `;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        institution_id,
+      ]);
+      return rows as AutomaticRegistrationKeywordEntity[];
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // * Add institution automatic keyword
   async addAutomaticRegistrationKeyword(
     payload: AutomaticRegistrationKeywordEntity,
     trx: PoolConnection,
@@ -456,7 +627,6 @@ export class InstitutionRepository {
   }
 
   // * Remove institution automatic keyword
-
   async removeAutomaticRegistrationKeyword(
     keyword_id: string,
     institution_id: string,
@@ -472,6 +642,42 @@ export class InstitutionRepository {
         keyword_id,
         institution_id,
       ]);
+    } catch (err) {
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // Section 7: Holidays & Calendar
+
+  // * Get all holidays for institution
+  async getInstitutionHolidays(
+    institution_id: string,
+    holiday_type?: HolidayType,
+    trx?: PoolConnection,
+  ): Promise<InstitutionHolidayEntity[]> {
+    try {
+      const connection = trx || dbPool;
+      if (holiday_type) {
+        const sql = `
+          SELECT * FROM institution_holidays 
+          WHERE institution_id = ? AND holiday_type = ?
+          ORDER BY holiday_value ASC
+        `;
+        const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+          institution_id,
+          holiday_type,
+        ]);
+        return rows as InstitutionHolidayEntity[];
+      }
+      const sql = `
+        SELECT * FROM institution_holidays 
+        WHERE institution_id = ? 
+        ORDER BY holiday_type ASC, holiday_value ASC
+      `;
+      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
+        institution_id,
+      ]);
+      return rows as InstitutionHolidayEntity[];
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
@@ -561,40 +767,6 @@ export class InstitutionRepository {
         WHERE institution_holidays_id = ? AND institution_id = ?
       `;
       await trx.execute(sql, [holiday_id, institution_id]);
-    } catch (err) {
-      throw new AppError(`Unexpected error occoured: ${err}`, 500);
-    }
-  }
-
-  // * Get all holidays for institution
-  async getInstitutionHolidays(
-    institution_id: string,
-    holiday_type?: HolidayType,
-    trx?: PoolConnection,
-  ): Promise<InstitutionHolidayEntity[]> {
-    try {
-      const connection = trx || dbPool;
-      if (holiday_type) {
-        const sql = `
-          SELECT * FROM institution_holidays 
-          WHERE institution_id = ? AND holiday_type = ?
-          ORDER BY holiday_value ASC
-        `;
-        const [rows] = await connection.execute<RowDataPacket[]>(sql, [
-          institution_id,
-          holiday_type,
-        ]);
-        return rows as InstitutionHolidayEntity[];
-      }
-      const sql = `
-        SELECT * FROM institution_holidays 
-        WHERE institution_id = ? 
-        ORDER BY holiday_type ASC, holiday_value ASC
-      `;
-      const [rows] = await connection.execute<RowDataPacket[]>(sql, [
-        institution_id,
-      ]);
-      return rows as InstitutionHolidayEntity[];
     } catch (err) {
       throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }

@@ -1,11 +1,11 @@
 import { z } from "zod";
 import sanitizeHtml from "sanitize-html";
 
+// Shared Enums & Utilities
+
 export const institutionTypeSchema = z.enum(["university", "polytechnic"]);
 
 export const studentApprovalSystemSchema = z.enum(["manual", "automatic"]);
-
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 
 export const membershipFeeTypeSchema = z.enum([
   "none",
@@ -20,6 +20,8 @@ export const institutionRegistrationRequestStatusSchema = z.enum([
   "rejected",
 ]);
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
 const sanitize = (value: string) =>
   sanitizeHtml(value, {
     allowedTags: [],
@@ -27,6 +29,8 @@ const sanitize = (value: string) =>
   });
 
 const cleanString = z.string().trim();
+
+// Section 1: Onboarding & Registration Requests
 
 // Schema for registration request
 export const institutionRegistrationRequestSchema = z.object({
@@ -145,6 +149,63 @@ export const institutionRegistrationRequestEntitySchema =
       deleted_at: z.union([z.date(), z.string()]).nullable().optional(),
     });
 
+// Schema for querying institution registration requests
+export const getRegistrationRequestsQuerySchema = z.object({
+  status: institutionRegistrationRequestStatusSchema.optional(),
+  institution_request_id: z
+    .uuid("Institution Request ID must be a valid UUID")
+    .optional(),
+});
+
+// Section 1 Inferred Types
+export type InstitutionType = z.infer<typeof institutionTypeSchema>;
+export type StudentApprovalSystem = z.infer<
+  typeof studentApprovalSystemSchema
+>;
+export type MembershipFeeType = z.infer<typeof membershipFeeTypeSchema>;
+export type InstitutionRegistrationRequestStatus = z.infer<
+  typeof institutionRegistrationRequestStatusSchema
+>;
+
+export type InstitutionRegistrationInput = z.infer<
+  typeof institutionRegistrationRequestSchema
+>;
+export type InstitutionCreationInput = z.infer<
+  typeof institutionCreationSchema
+>;
+
+export type InstitutionEntity = z.infer<typeof institutionEntitySchema>;
+export type InstitutionRegistrationRequstEntity = z.infer<
+  typeof institutionRegistrationRequestEntitySchema
+>;
+export type InstitutionRegistrationRequstPayload = InstitutionEntity;
+export type GetRegistrationRequestsQueryInput = z.infer<
+  typeof getRegistrationRequestsQuerySchema
+>;
+
+// Section 2: Institution Profile & Settings
+
+// Schema for querying institution details by id or slug
+export const getInstitutionDetailsQuerySchema = z
+  .object({
+    institution_id: z.uuid("Institution ID must be a valid UUID").optional(),
+    institution_slug: cleanString.min(1).optional(),
+  })
+  .refine(
+    (data) =>
+      data.institution_id !== undefined || data.institution_slug !== undefined,
+    {
+      message: "Either institution_id or institution_slug must be provided",
+    },
+  );
+
+// Section 2 Inferred Types
+export type GetInstitutionDetailsQueryInput = z.infer<
+  typeof getInstitutionDetailsQuerySchema
+>;
+
+// Section 3: Academic Departments
+
 // Schema for institution department
 export const institutionDepartmentSchema = z.object({
   department_id: z.uuid(),
@@ -155,8 +216,20 @@ export const institutionDepartmentSchema = z.object({
     .transform(sanitize),
 });
 
-// Schema for institution shift
+// Schema for querying departments of an institution
+export const getInstitutionDepartmentsQuerySchema = z.object({
+  institution_id: z.uuid("Institution ID must be a valid UUID"),
+});
 
+// Section 3 Inferred Types
+export type DepartmentEntity = z.infer<typeof institutionDepartmentSchema>;
+export type GetInstitutionDepartmentsQueryInput = z.infer<
+  typeof getInstitutionDepartmentsQuerySchema
+>;
+
+// Section 4: Academic Shifts
+
+// Schema for institution shift
 export const institutionShiftSchema = z.object({
   shift_id: z.uuid(),
   institution_id: z.uuid(),
@@ -168,8 +241,67 @@ export const institutionShiftSchema = z.object({
   shift_end_time: z.iso.time(),
 });
 
-// Schema for institution holidays
+// Schema for querying shifts of an institution
+export const getInstitutionShiftsQuerySchema = z.object({
+  institution_id: z.uuid("Institution ID must be a valid UUID"),
+});
 
+// Section 4 Inferred Types
+export type InstitutionShiftEntity = z.infer<typeof institutionShiftSchema>;
+export type GetInstitutionShiftsQueryInput = z.infer<
+  typeof getInstitutionShiftsQuerySchema
+>;
+
+// Section 5: Document Assets & Verification Examples
+
+// Schema for file asset in institution
+export const fileAssetSchema = z.object({
+  asset_id: z.uuid(),
+  institution_id: z.uuid(),
+  file_url: z.url().max(1024),
+  file_type: z.enum(["pdf", "image"]),
+  asset_scope: z
+    .enum(["system_template", "tenant_private"])
+    .default("tenant_private"),
+});
+
+// Schema for querying file assets/documents of an institution
+export const getInstitutionDocumentsQuerySchema = z.object({
+  institution_id: z.uuid("Institution ID must be a valid UUID"),
+  asset_scope: z.enum(["system_template", "tenant_private"]).optional(),
+});
+
+// Section 5 Inferred Types
+export type FileAssetEntithy = z.infer<typeof fileAssetSchema>;
+export type GetInstitutionDocumentsQueryInput = z.infer<
+  typeof getInstitutionDocumentsQuerySchema
+>;
+
+// Section 6: Registration Automation Keywords
+
+// Schema for automatic registration keyword in any instution
+export const automaticRegistrationKeywordSchema = z.object({
+  keyword_id: z.uuid(),
+  institution_id: z.uuid(),
+  keyword_value: cleanString.min(1).max(100).transform(sanitize),
+});
+
+// Schema for querying automatic registration keywords of an institution
+export const getAutomaticRegistrationKeywordsQuerySchema = z.object({
+  institution_id: z.uuid("Institution ID must be a valid UUID"),
+});
+
+// Section 6 Inferred Types
+export type AutomaticRegistrationKeywordEntity = z.infer<
+  typeof automaticRegistrationKeywordSchema
+>;
+export type GetAutomaticRegistrationKeywordsQueryInput = z.infer<
+  typeof getAutomaticRegistrationKeywordsQuerySchema
+>;
+
+// Section 7: Holidays & Calendar
+
+// Schema for institution holidays
 export const institutionHolidaysSchema = z.object({
   institution_holidays_id: z.uuid(),
   institution_id: z.uuid(),
@@ -247,53 +379,7 @@ export const getInstitutionHolidaysQuerySchema = z.object({
   holiday_type: z.enum(["recurring", "manual"]).optional(),
 });
 
-// Schema for file asset in institution
-
-export const fileAssetSchema = z.object({
-  asset_id: z.uuid(),
-  institution_id: z.uuid(),
-  file_url: z.url().max(1024),
-  file_type: z.enum(["pdf", "image"]),
-  asset_scope: z
-    .enum(["system_template", "tenant_private"])
-    .default("tenant_private"),
-});
-
-// Schema for automatic registration keyword in any instution
-
-export const automaticRegistrationKeywordSchema = z.object({
-  keyword_id: z.uuid(),
-  institution_id: z.uuid(),
-  keyword_value: cleanString.min(1).max(100).transform(sanitize),
-});
-
-// * exporting and infering the types from schemas
-export type InstitutionType = z.infer<typeof institutionTypeSchema>;
-export type StudentApprovalSystem = z.infer<
-  typeof studentApprovalSystemSchema
->;
-export type MembershipFeeType = z.infer<typeof membershipFeeTypeSchema>;
-export type InstitutionRegistrationRequestStatus = z.infer<
-  typeof institutionRegistrationRequestStatusSchema
->;
-
-export type InstitutionRegistrationInput = z.infer<
-  typeof institutionRegistrationRequestSchema
->;
-export type InstitutionCreationInput = z.infer<
-  typeof institutionCreationSchema
->;
-
-export type InstitutionEntity = z.infer<typeof institutionEntitySchema>;
-export type InstitutionRegistrationRequstEntity = z.infer<
-  typeof institutionRegistrationRequestEntitySchema
->;
-export type InstitutionRegistrationRequstPayload = InstitutionEntity;
-
-export type DepartmentEntity = z.infer<typeof institutionDepartmentSchema>;
-
-export type InstitutionShiftEntity = z.infer<typeof institutionShiftSchema>;
-
+// Section 7 Inferred Types
 export type InstitutionHolidaysEntity = z.infer<
   typeof institutionHolidaysSchema
 >;
@@ -303,20 +389,10 @@ export type HolidayType = InstitutionHolidaysEntity["holiday_type"];
 export type AddRecurringHolidayInput = z.infer<
   typeof addRecurringHolidaySchema
 >;
-
 export type AddManualHolidayInput = z.infer<typeof addManualHolidaySchema>;
-
 export type DeleteInstitutionHolidayInput = z.infer<
   typeof deleteInstitutionHolidaySchema
 >;
-
 export type GetInstitutionHolidaysQueryInput = z.infer<
   typeof getInstitutionHolidaysQuerySchema
 >;
-
-export type FileAssetEntithy = z.infer<typeof fileAssetSchema>;
-
-export type AutomaticRegistrationKeywordEntity = z.infer<
-  typeof automaticRegistrationKeywordSchema
->;
-

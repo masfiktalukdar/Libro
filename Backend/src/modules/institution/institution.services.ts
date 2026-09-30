@@ -6,6 +6,7 @@ import { institutionRepository } from "@modules/institution/institution.reposito
 import {
   InstitutionEntity,
   InstitutionRegistrationRequstEntity,
+  InstitutionRegistrationRequestStatus,
   InstitutionRegistrationInput,
   InstitutionCreationInput,
 } from "@modules/institution/institution.validator.js";
@@ -14,6 +15,8 @@ import { createInstitutionSlug } from "@utils/createUniqueSlug.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionServices {
+  // Section 1: Onboarding & Registration Requests
+
   // Creating the registration request
   async createInstitutionRegistrationRequest(
     payload: InstitutionRegistrationInput,
@@ -106,6 +109,32 @@ export class InstitutionServices {
         throw new AppError(`Unexpected error occoured ${err}`, 500);
       }
     });
+  }
+
+  // * Get registration requests with optional filtering
+  async getRegistrationRequests(query: {
+    status?: InstitutionRegistrationRequestStatus;
+    institution_request_id?: string;
+  }): Promise<{
+    success: boolean;
+    data: InstitutionRegistrationRequstEntity[];
+  }> {
+    try {
+      const requests = await institutionRepository.getRegistrationRequests(
+        query.status,
+        query.institution_request_id,
+      );
+
+      return {
+        success: true,
+        data: requests,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
   }
 
   // Send invitation link to create

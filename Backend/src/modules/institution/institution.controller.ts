@@ -9,6 +9,12 @@ import {
   institutionShiftSchema,
   deleteInstitutionHolidaySchema,
   getInstitutionHolidaysQuerySchema,
+  getInstitutionDepartmentsQuerySchema,
+  getInstitutionShiftsQuerySchema,
+  getInstitutionDetailsQuerySchema,
+  getAutomaticRegistrationKeywordsQuerySchema,
+  getInstitutionDocumentsQuerySchema,
+  getRegistrationRequestsQuerySchema,
 } from "./institution.validator.js";
 import {
   OTP_PURPOSE,
@@ -19,6 +25,8 @@ import { userSignUpOTPTemplate } from "@/templates/userSignUpOTP.js";
 import { AppError } from "@/utils/appError.js";
 
 export class InstitutionController {
+  // Section 1: Onboarding & Registration Requests
+
   // Controller for sent institution request registration OTP
   async sentOTPForInstitutionRegistrationRequest(
     req: Request,
@@ -26,7 +34,6 @@ export class InstitutionController {
     next: NextFunction,
   ) {
     try {
-      // Sending the otp
       const { institution_email } = req.body;
       await otpService.sendOTP(
         institution_email,
@@ -35,7 +42,6 @@ export class InstitutionController {
         userSignUpOTPTemplate,
       );
 
-      // sending the success response
       res.status(201).json({
         success: true,
         message: `OTP has been sent to ${institution_email}. Please check your inbox`,
@@ -52,13 +58,11 @@ export class InstitutionController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      // Creating the registration request
       const institutionRequestResult =
         await institutionServices.createInstitutionRegistrationRequest(
           req.body,
         );
 
-      // sending the success response
       res.status(201).json({
         success: true,
         message:
@@ -113,6 +117,25 @@ export class InstitutionController {
         success: true,
         message: `Institution registration request changed to ${statusPayload} successfully`,
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for getting institution registration requests
+  async getRegistrationRequests(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const validatedQuery =
+        await getRegistrationRequestsQuerySchema.parseAsync(req.query);
+
+      const result =
+        await institutionServices.getRegistrationRequests(validatedQuery);
+
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }
@@ -187,6 +210,28 @@ export class InstitutionController {
     }
   }
 
+  // Section 2: Institution Profile & Settings
+
+  // Controller for getting institution details by ID or Slug
+  async getInstitutionDetails(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const validatedQuery = await getInstitutionDetailsQuerySchema.parseAsync(
+        req.query,
+      );
+
+      const result =
+        await editInstitutionService.getInstitutionDetails(validatedQuery);
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // Controller for editing institution name
   async editInstitutionName(
     req: Request,
@@ -205,7 +250,7 @@ export class InstitutionController {
     }
   }
 
-  // Controller for updating general data of an instiution
+  // Controller for updating general data of an institution
   async updateInstitutionGeneralData(
     req: Request,
     res: Response,
@@ -225,7 +270,7 @@ export class InstitutionController {
     }
   }
 
-  // Controller for updating sensetive data of an instiution
+  // Controller for updating sensitive data of an institution
   async updateInstitutionSensetiveData(
     req: Request,
     res: Response,
@@ -239,6 +284,27 @@ export class InstitutionController {
           req.body,
         );
       res.status(200).json(updatedResult);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Section 3: Academic Departments
+
+  // Controller for getting all departments for an institution
+  async getInstitutionDepartments(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id } =
+        await getInstitutionDepartmentsQuerySchema.parseAsync(req.query);
+
+      const result =
+        await editInstitutionService.getInstitutionDepartments(institution_id);
+
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }
@@ -269,8 +335,8 @@ export class InstitutionController {
     try {
       const { department_id, institution_id } =
         await institutionDepartmentSchema
-          .pick({ department_id: true, institution_id: true })
-          .parseAsync(req.query);
+            .pick({ department_id: true, institution_id: true })
+            .parseAsync(req.query);
 
       const result = await editInstitutionService.deleteInstitutionDepartment(
         department_id,
@@ -283,8 +349,28 @@ export class InstitutionController {
     }
   }
 
-  // Controller for creating new shift
+  // Section 4: Academic Shifts
 
+  // Controller for getting all shifts for an institution
+  async getInstitutionShifts(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id } =
+        await getInstitutionShiftsQuerySchema.parseAsync(req.query);
+
+      const result =
+        await editInstitutionService.getInstitutionShifts(institution_id);
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for creating new shift
   async createInstitutionShift(
     req: Request,
     res: Response,
@@ -301,7 +387,6 @@ export class InstitutionController {
   }
 
   // Controller for updating institution shift
-
   async updateInstitutionShift(
     req: Request,
     res: Response,
@@ -328,7 +413,6 @@ export class InstitutionController {
   }
 
   // Controller for deleting shift
-
   async deleteInstitutionShift(
     req: Request,
     res: Response,
@@ -353,8 +437,30 @@ export class InstitutionController {
     }
   }
 
-  // controller for adding institution document example
+  // Section 5: Document Assets & Verification Examples
 
+  // Controller for getting document assets of an institution
+  async getInstitutionDocuments(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id, asset_scope } =
+        await getInstitutionDocumentsQuerySchema.parseAsync(req.query);
+
+      const result = await editInstitutionService.getInstitutionDocuments(
+        institution_id,
+        asset_scope,
+      );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for adding institution document example
   async addInstitutionAssetExample(
     req: Request,
     res: Response,
@@ -370,8 +476,7 @@ export class InstitutionController {
     }
   }
 
-  // controller for deleting institution document example
-
+  // Controller for deleting institution document example
   async deleteInstitutionAssetExample(
     req: Request,
     res: Response,
@@ -396,8 +501,30 @@ export class InstitutionController {
     }
   }
 
-  // Controller for adding new automatic registration keyword
+  // Section 6: Registration Automation Keywords
 
+  // Controller for getting automatic registration keywords
+  async getAutomaticRegistrationKeywords(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id } =
+        await getAutomaticRegistrationKeywordsQuerySchema.parseAsync(req.query);
+
+      const result =
+        await editInstitutionService.getAutomaticRegistrationKeywords(
+          institution_id,
+        );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Controller for adding new automatic registration keyword
   async addAutomaticRegistrationKeyword(
     req: Request,
     res: Response,
@@ -413,7 +540,6 @@ export class InstitutionController {
   }
 
   // Controller for removing automatic registration keyword
-
   async removeAutomaticRegistrationKeyword(
     req: Request,
     res: Response,
@@ -432,6 +558,29 @@ export class InstitutionController {
           keyword_id,
           institution_id,
         );
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // Section 7: Holidays & Calendar
+
+  // Controller for getting all holidays for an institution
+  async getInstitutionHolidays(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { institution_id, holiday_type } =
+        await getInstitutionHolidaysQuerySchema.parseAsync(req.query);
+
+      const result = await editInstitutionService.getInstitutionHolidays(
+        institution_id,
+        holiday_type,
+      );
 
       res.status(200).json(result);
     } catch (err) {
@@ -480,27 +629,6 @@ export class InstitutionController {
       const result = await editInstitutionService.deleteInstitutionHoliday(
         institution_holidays_id,
         institution_id,
-      );
-
-      res.status(200).json(result);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  // Controller for getting all holidays for an institution
-  async getInstitutionHolidays(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) {
-    try {
-      const { institution_id, holiday_type } =
-        await getInstitutionHolidaysQuerySchema.parseAsync(req.query);
-
-      const result = await editInstitutionService.getInstitutionHolidays(
-        institution_id,
-        holiday_type,
       );
 
       res.status(200).json(result);

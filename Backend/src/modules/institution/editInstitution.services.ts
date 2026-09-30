@@ -39,6 +39,53 @@ const SETTINGS_FIELDS = [
 // Starting the actual code
 
 class EditInstitutionService {
+  // Section 2: Institution Profile & Settings
+
+  // * Get institution details by ID or Slug
+  async getInstitutionDetails(query: {
+    institution_id?: string;
+    institution_slug?: string;
+  }): Promise<{
+    success: boolean;
+    data: Omit<InstitutionEntity, "institution_password_hashed">;
+  }> {
+    try {
+      let institution: InstitutionEntity | null = null;
+
+      if (query.institution_id) {
+        institution = await institutionRepository.findInstitutionById(
+          query.institution_id,
+        );
+      } else if (query.institution_slug) {
+        institution = await institutionRepository.findInstitutionBySlug(
+          query.institution_slug,
+        );
+      } else {
+        throw new AppError(
+          "Either institution_id or institution_slug is required",
+          400,
+        );
+      }
+
+      if (!institution) {
+        throw new AppError("Institution not found", 404);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { institution_password_hashed, ...institutionData } = institution;
+
+      return {
+        success: true,
+        data: institutionData,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
   // * Edit institution name
   async editInstitutionName(
     payload: Partial<InstitutionEntity>,
@@ -203,6 +250,39 @@ class EditInstitutionService {
     });
   }
 
+  // Section 3: Academic Departments
+
+  // * Get all departments for institution
+  async getInstitutionDepartments(institution_id: string): Promise<{
+    success: boolean;
+    data: DepartmentEntity[];
+  }> {
+    try {
+      if (!institution_id) {
+        throw new AppError("institution_id is required", 400);
+      }
+
+      const institution =
+        await institutionRepository.findInstitutionById(institution_id);
+      if (!institution) {
+        throw new AppError("Invalid institution", 404);
+      }
+
+      const departments =
+        await institutionRepository.getInstitutionDepartments(institution_id);
+
+      return {
+        success: true,
+        data: departments,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
   // * Create new department for institution
   async createInstitutionDepartment(
     payload: Omit<DepartmentEntity, "department_id">,
@@ -312,6 +392,39 @@ class EditInstitutionService {
         throw err;
       }
       throw new AppError(`Unexpected error occoured ${err}`, 500);
+    }
+  }
+
+  // Section 4: Academic Shifts
+
+  // * Get all shifts for institution
+  async getInstitutionShifts(institution_id: string): Promise<{
+    success: boolean;
+    data: InstitutionShiftEntity[];
+  }> {
+    try {
+      if (!institution_id) {
+        throw new AppError("institution_id is required", 400);
+      }
+
+      const institution =
+        await institutionRepository.findInstitutionById(institution_id);
+      if (!institution) {
+        throw new AppError("Invalid institution", 404);
+      }
+
+      const shifts =
+        await institutionRepository.getInstitutionShifts(institution_id);
+
+      return {
+        success: true,
+        data: shifts,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
     }
   }
 
@@ -559,6 +672,45 @@ class EditInstitutionService {
     }
   }
 
+  // Section 5: Document Assets & Verification Examples
+
+  // * Get document assets for institution
+  async getInstitutionDocuments(
+    institution_id: string,
+    asset_scope?: "system_template" | "tenant_private",
+  ): Promise<{
+    success: boolean;
+    data: FileAssetEntithy[];
+  }> {
+    try {
+      if (!institution_id) {
+        throw new AppError("institution_id is required", 400);
+      }
+
+      const institution =
+        await institutionRepository.findInstitutionById(institution_id);
+      if (!institution) {
+        throw new AppError("Invalid institution", 404);
+      }
+
+      const documents =
+        await institutionRepository.getInstitutionDocuments(
+          institution_id,
+          asset_scope,
+        );
+
+      return {
+        success: true,
+        data: documents,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
   // * Add file for document example dispay
 
   async addInstitutionAssetExample(
@@ -655,6 +807,41 @@ class EditInstitutionService {
     }
   }
 
+  // Section 6: Registration Automation Keywords
+
+  // * Get automatic registration keywords for institution
+  async getAutomaticRegistrationKeywords(institution_id: string): Promise<{
+    success: boolean;
+    data: AutomaticRegistrationKeywordEntity[];
+  }> {
+    try {
+      if (!institution_id) {
+        throw new AppError("institution_id is required", 400);
+      }
+
+      const institution =
+        await institutionRepository.findInstitutionById(institution_id);
+      if (!institution) {
+        throw new AppError("Invalid institution", 404);
+      }
+
+      const keywords =
+        await institutionRepository.getAutomaticRegistrationKeywords(
+          institution_id,
+        );
+
+      return {
+        success: true,
+        data: keywords,
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
   // * Add Institution automatic registration keyword
 
   async addAutomaticRegistrationKeyword(
@@ -741,6 +928,45 @@ class EditInstitutionService {
           message: `Selected keyword deleted successfully`,
         };
       });
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(`Unexpected error occoured: ${err}`, 500);
+    }
+  }
+
+  // Section 7: Holidays & Calendar
+
+  // * Get all holidays for institution
+  async getInstitutionHolidays(
+    institution_id: string,
+    holiday_type?: HolidayType,
+  ): Promise<{
+    success: boolean;
+    data: InstitutionHolidayEntity[];
+  }> {
+    try {
+      if (!institution_id) {
+        throw new AppError("institution_id is required", 400);
+      }
+
+      const institution =
+        await institutionRepository.findInstitutionById(institution_id);
+
+      if (!institution) {
+        throw new AppError("Invalid institution", 404);
+      }
+
+      const holidays = await institutionRepository.getInstitutionHolidays(
+        institution_id,
+        holiday_type,
+      );
+
+      return {
+        success: true,
+        data: holidays,
+      };
     } catch (err) {
       if (err instanceof AppError) {
         throw err;
@@ -1020,42 +1246,7 @@ class EditInstitutionService {
     }
   }
 
-  // * Get all holidays for institution
-  async getInstitutionHolidays(
-    institution_id: string,
-    holiday_type?: HolidayType,
-  ): Promise<{
-    success: boolean;
-    data: InstitutionHolidayEntity[];
-  }> {
-    try {
-      if (!institution_id) {
-        throw new AppError("institution_id is required", 400);
-      }
 
-      const institution =
-        await institutionRepository.findInstitutionById(institution_id);
-
-      if (!institution) {
-        throw new AppError("Invalid institution", 404);
-      }
-
-      const holidays = await institutionRepository.getInstitutionHolidays(
-        institution_id,
-        holiday_type,
-      );
-
-      return {
-        success: true,
-        data: holidays,
-      };
-    } catch (err) {
-      if (err instanceof AppError) {
-        throw err;
-      }
-      throw new AppError(`Unexpected error occoured: ${err}`, 500);
-    }
-  }
 }
 
 export const editInstitutionService = new EditInstitutionService();
